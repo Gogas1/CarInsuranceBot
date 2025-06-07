@@ -484,3 +484,6 @@ $RECYCLE.BIN/
 *.swp
 /CarInsuranceBot.WebApi/appsettings.json
 /CarInsuranceBot.WebApi/appsettings.Development.json
+/CarInsuranceBot.WebApi/public_key.pem
+/CarInsuranceBot.WebApi/new_private.key
+/CarInsuranceBot.WebApi/new_private.pem

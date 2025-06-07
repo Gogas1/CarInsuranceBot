@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" data-lt-installed="true"><head>
+    <meta charset="UTF-8">
+    <title>Telegram Passport - Example</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+</head>
+
+<body>
+    <h3>Redirecting...</h3>
+    <h6>
+        If that didn't work,
+        <a id="btn">Invalid! Query string is not provided.</a>
+    </h6>
+    <script type="application/javascript">
+        const btnTag = document.getElementById('btn');
+        if (window.location.search.length) {
+            const url = 'tg://' + 'resolve' + window.location.search;
+            btnTag.setAttribute('href', url);
+            window.location.replace(url);
+        } else {
+            btnTag.innerText = "Invalid! Query string is not provided.";
+        }
+    </script>
+
+
+
+</body></html>
