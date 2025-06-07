@@ -10,17 +10,17 @@
     <h3>Redirecting...</h3>
     <h6>
         If that didn't work,
-        <a id="btn">Invalid! Query string is not provided.</a>
+        <a id="btn">Click here.</a>
     </h6>
     <script type="application/javascript">
-        const btnTag = document.getElementById('btn');
-        if (window.location.search.length) {
-            const isAndroid = /android/i.test(window.navigator.userAgent || '');
-            const url = (isAndroid ? 'tg:' : 'tg://') + 'resolve' + window.location.search;
-            btnTag.setAttribute('href', url);
-            window.location.replace(url);
+        const btn = document.getElementById('btn');
+        if (!window.location.search) {
+            btn.innerText = "Invalid! Query string is not provided.";
         } else {
-            btnTag.innerText = "Invalid! Query string is not provided.";
+            const deepLink = 'tg://passport' + window.location.search;
+            btn.setAttribute('href', deepLink);
+            // Try immediate redirect:
+            window.location.replace(deepLink);
         }
     </script>
 
