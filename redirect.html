@@ -15,7 +15,8 @@
     <script type="application/javascript">
         const btnTag = document.getElementById('btn');
         if (window.location.search.length) {
-            const url = 'tg://' + 'resolve' + window.location.search;
+            const isAndroid = /android/i.test(window.navigator.userAgent || '');
+            const url = (isAndroid ? 'tg:' : 'tg://') + 'resolve' + window.location.search;
             btnTag.setAttribute('href', url);
             window.location.replace(url);
         } else {
