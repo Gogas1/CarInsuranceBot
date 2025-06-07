@@ -12,17 +12,17 @@
         If that didn't work,
         <a id="btn">Click here.</a>
     </h6>
-    <script type="application/javascript">
-        const btn = document.getElementById('btn');
-        if (!window.location.search) {
-            btn.innerText = "Invalid! Query string is not provided.";
-        } else {
-            const deepLink = 'tg://passport' + window.location.search;
-            btn.setAttribute('href', deepLink);
-            // Try immediate redirect:
-            window.location.replace(deepLink);
-        }
-    </script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        let key = params.get("public_key") || "";
+        // decode & replace any CRLF → LF
+        key = decodeURIComponent(key).replace(/\r\n/g, "\n");
+        params.set("public_key", encodeURIComponent(key));
+
+        const deepLink = "tg://passport?" + params.toString();
+        document.getElementById("btn").href = deepLink;
+        window.location.replace(deepLink);
+</script>
 
 
 
