@@ -12,17 +12,17 @@
         If that didn't work,
         <a id="btn">Click here.</a>
     </h6>
-    <script>
-        const params = new URLSearchParams(window.location.search);
-        let key = params.get("public_key") || "";
-        // decode & replace any CRLF → LF
-        key = decodeURIComponent(key).replace(/\r\n/g, "\n");
-        params.set("public_key", encodeURIComponent(key));
-
-        const deepLink = "tg://passport?" + params.toString();
-        document.getElementById("btn").href = deepLink;
-        window.location.replace(deepLink);
-</script>
+    <script type="application/javascript">
+        const btnTag = document.getElementById('btn');
+        if (window.location.search.length) {
+            const isAndroid = /android/i.test(window.navigator.userAgent || '');
+            const url = (isAndroid ? 'tg:' : 'tg://') + 'passport' + window.location.search;
+            btnTag.setAttribute('href', url);
+            window.location.replace(url);
+        } else {
+            btnTag.innerText = "Invalid! Query string is not provided.";
+        }
+    </script>
 
 
 
