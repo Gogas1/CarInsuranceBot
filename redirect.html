@@ -16,7 +16,7 @@
         const btnTag = document.getElementById('btn');
         if (window.location.search.length) {
             const isAndroid = /android/i.test(window.navigator.userAgent || '');
-            const url = (isAndroid ? 'tg:' : 'tg://') + 'resolve' + window.location.search; //The service app need different url prefix for androind client
+            const url = (isAndroid ? 'tg:' : 'tg://') + 'passport' + window.location.search; //The service app need different url prefix for androind client
             btnTag.setAttribute('href', url);
             window.location.replace(url);
         } else {
