@@ -12,22 +12,17 @@
         If that didn't work,
         <a id="btn">Click here.</a>
     </h6>
-    <script>
+    <script type="application/javascript">
         const btnTag = document.getElementById('btn');
         if (window.location.search.length) {
-            const isAndroid = /android/i.test(navigator.userAgent);            
-            const safeSearch = encodeURI(window.location.search);
-                        
-            const scheme = isAndroid ? 'tg:' : 'tg://';
-            const url    = scheme + 'resolve' + safeSearch;
-
+            const isAndroid = /android/i.test(window.navigator.userAgent || '');
+            const url = (isAndroid ? 'tg:' : 'tg://') + 'resolve' + window.location.search; //The service app need different url prefix for androind client
             btnTag.setAttribute('href', url);
             window.location.replace(url);
         } else {
-            btnTag.innerText = 'Invalid! Query string is not provided.';
+            btnTag.innerText = "Invalid! Query string is not provided.";
         }
     </script>
-
 
 
 
