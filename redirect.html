@@ -15,12 +15,10 @@
     <script>
         const btnTag = document.getElementById('btn');
         if (window.location.search.length) {
-            const isAndroid = /android/i.test(navigator.userAgent);
-            // escape any existing "%xx" sequences so they survive Android's normalization
+            const isAndroid = /android/i.test(navigator.userAgent);            
             const safeSearch = encodeURI(window.location.search);
-
-            // build the deep-link
-            const scheme = isAndroid ? 'app:' : 'app://';
+                        
+            const scheme = isAndroid ? 'tg:' : 'tg://';
             const url    = scheme + 'resolve' + safeSearch;
 
             btnTag.setAttribute('href', url);
