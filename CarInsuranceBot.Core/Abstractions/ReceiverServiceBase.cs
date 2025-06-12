@@ -25,7 +25,7 @@ namespace CarInsuranceBot.Core.Abstractions
             var receiverOptions = new ReceiverOptions()
             {
                 AllowedUpdates = [],
-                DropPendingUpdates = false,
+                DropPendingUpdates = true,
             };
 
             await _botClient.ReceiveAsync(_updateHandler, receiverOptions, cancellationToken);

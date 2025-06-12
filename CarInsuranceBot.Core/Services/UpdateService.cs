@@ -1,6 +1,7 @@
 ﻿using CarInsuranceBot.Core.Actions.Abstractions;
 using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.States.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -15,20 +16,21 @@ namespace CarInsuranceBot.Core.Services
 {
     internal class UpdateService : IUpdateHandler
     {
-        private readonly UserService _userService;
-        private readonly ActionsFactory<Message> _messageActionFactory;
         private readonly ILogger<UpdateService> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public UpdateService(ActionsFactory<Message> messageActionFactory, ILogger<UpdateService> logger, UserService userService)
+        public UpdateService(
+            ILogger<UpdateService> logger,
+            IServiceScopeFactory scopeFactory)
         {
-            _messageActionFactory = messageActionFactory;
             _logger = logger;
-            _userService = userService;
+            _scopeFactory = scopeFactory;
         }
 
-        public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
+        public Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, HandleErrorSource source, CancellationToken cancellationToken)
         {
-            _logger.LogError(exception.Message);
+            _logger.LogError($"{exception.Message}, {exception.StackTrace}");
+            return Task.CompletedTask;
         }
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
@@ -38,6 +40,7 @@ namespace CarInsuranceBot.Core.Services
             await(update switch
             {
                 { Message: { } message } => OnMessage(message),
+                { CallbackQuery: { } callback } => OnCallbackQuery(callback),
                 _ => UnknownUpdateHandlerAsync(update)
             });
         }
@@ -49,16 +52,47 @@ namespace CarInsuranceBot.Core.Services
                 return;
             }
 
-            UserState userState = await _userService.GetUserStateByTelegramIdAsync(msg.From.Id);
-
-            ActionBase<Message>? targetStateHandler = _messageActionFactory.GetActionForState(userState);
-
-            if (targetStateHandler == null)
+            using (var scope = _scopeFactory.CreateScope())
             {
-                return;
+                var sp = scope.ServiceProvider;
+                var userService = sp.GetRequiredService<UserService>();
+                var messageActionFactory = sp.GetRequiredService<ActionsFactory<Message>>();
+
+                UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id);
+
+                ActionBase<Message>? targetStateHandler = messageActionFactory.GetActionForState(userState);
+
+                if (targetStateHandler == null)
+                {
+                    return;
+                }
+
+                await targetStateHandler.Execute(msg);
+
             }
 
-            await targetStateHandler.Execute(msg);
+        }
+
+        private async Task OnCallbackQuery(CallbackQuery callback)
+        {
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var sp = scope.ServiceProvider;
+                var userService = sp.GetRequiredService<UserService>();
+                var callbackQueryActionFactory = sp.GetRequiredService<ActionsFactory<CallbackQuery>>();
+
+                UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id);
+
+                ActionBase<CallbackQuery>? targetStateHandler = callbackQueryActionFactory.GetActionForState(userState);
+
+                if (targetStateHandler == null)
+                {
+                    return;
+                }
+
+                await targetStateHandler.Execute(callback);
+
+            }
         }
 
         private Task UnknownUpdateHandlerAsync(Update update)

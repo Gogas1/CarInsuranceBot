@@ -1,10 +1,11 @@
-﻿using System;
+﻿using CarInsuranceBot.Core.Configuration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CarInsuranceBot.Core.Configuration
+namespace CarInsuranceBot.Core.Validation
 {
     /// <summary>
     /// Provides methods to validate <see cref="BotConfiguration"/> data

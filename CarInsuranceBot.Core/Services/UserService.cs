@@ -39,6 +39,7 @@ namespace CarInsuranceBot.Core.Services
         public async Task SetUserStateByTelegramIdAsync(UserState newState, long telegramId)
         {
             var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId);
+
             if (targetUser == null)
             {
                 targetUser = new MyUser()
@@ -51,14 +52,18 @@ namespace CarInsuranceBot.Core.Services
                 return;
             }
 
+            if (targetUser.UserState == newState)
+            {
+                return;
+            }
+
             targetUser.UserState = newState;
             await _userRepository.UpdateAsync(targetUser);
-
         }
 
         public async Task SetUserInputStateAsync(long telegramId, Action<UserInputState> handler)
         {
-            var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId);
+            var targetUser = await _userRepository.GetUserWithInputStateByTelegramIdAsync(telegramId);
             if (targetUser == null)
             {
                 targetUser = new MyUser

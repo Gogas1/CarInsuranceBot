@@ -1,6 +1,7 @@
 ﻿using CarInsuranceBot.Core.Models;
 using CarInsuranceBot.WebApi.DbContexts;
 using CarInsuranceBot.WebApi.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CarInsuranceBot.WebApi.Repositories
 {
@@ -13,44 +14,61 @@ namespace CarInsuranceBot.WebApi.Repositories
             _context = context;
         }
 
-        public Task<MyUser> CreateAsync(MyUser entity)
+        public async Task<MyUser> CreateAsync(MyUser entity)
         {
-            throw new NotImplementedException();
+            _context.Users.Add(entity);
+            await _context.SaveChangesAsync();
+
+            return entity;
         }
 
-        public Task DeleteAsync(MyUser entity)
+        public async Task DeleteAsync(MyUser entity)
         {
-            throw new NotImplementedException();
+            _context.Users.Remove(entity);
+            await _context.SaveChangesAsync();
         }
 
-        public Task DeleteByIdAsync(Guid id)
+        public async Task DeleteByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            await _context.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
         }
 
-        public Task<MyUser?> GetByIdAsync(Guid id)
+        public async Task<MyUser?> GetByIdAsync(Guid id)
         {
-            throw new NotImplementedException();
+            return await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
         }
 
-        public Task<MyUser?> GetUserByTelegramIdAsync(long telegramId)
+        public async Task<MyUser?> GetUserByTelegramIdAsync(long telegramId)
         {
-            throw new NotImplementedException();
+            return await _context.Users.FirstOrDefaultAsync(u => u.TelegramId == telegramId);
         }
 
-        public Task<UserInputState?> GetUserInputStateByTelegramIdAsync(long telegramId)
+        public async Task<UserInputState?> GetUserInputStateByTelegramIdAsync(long telegramId)
         {
-            throw new NotImplementedException();
+            var targetUser = await _context.Users
+                .Include(u => u.InputState)
+                .FirstOrDefaultAsync(u => u.TelegramId == telegramId);
+            if(targetUser == null)
+            {
+                return null;
+            }
+
+            return targetUser.InputState;
         }
 
-        public Task<MyUser?> GetUserWithInputStateByTelegramIdAsync(long telegramId)
+        public async Task<MyUser?> GetUserWithInputStateByTelegramIdAsync(long telegramId)
         {
-            throw new NotImplementedException();
+            return await _context.Users
+                .Include(u => u.InputState)
+                .FirstOrDefaultAsync(u => u.TelegramId == telegramId);
         }
 
-        public Task<MyUser> UpdateAsync(MyUser entity)
+        public async Task<MyUser> UpdateAsync(MyUser entity)
         {
-            throw new NotImplementedException();
+            _context.Users.Update(entity);
+            await _context.SaveChangesAsync();
+
+            return entity;
         }
     }
 }

@@ -2,12 +2,13 @@ using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Extensions;
 using CarInsuranceBot.WebApi.Configuration;
 using CarInsuranceBot.WebApi.Extensions;
+using System.Threading.Tasks;
 
 namespace CarInsuranceBot.WebApi
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -19,9 +20,7 @@ namespace CarInsuranceBot.WebApi
             builder.Services.AddSwaggerGen();
             builder.Services.AddSqlServerDbContext();
 
-            var botConfig = builder.Configuration.GetSection("TelegramBot").Get<BotConfiguration>();
-            ArgumentNullException.ThrowIfNull(botConfig, nameof(botConfig));
-            builder.Services.AddCarInsuranceTelegramBot(botConfig);
+            await SetupTelegramBot(builder);
 
             var app = builder.Build();
 
@@ -40,6 +39,23 @@ namespace CarInsuranceBot.WebApi
             app.MapControllers();
 
             app.Run();
+        }
+
+        private static async Task SetupTelegramBot(WebApplicationBuilder builder)
+        {
+            var botConfig = builder.Configuration.GetSection("TelegramBot").Get<BotConfiguration>();
+            var keysCofig = builder.Configuration.GetSection("Keys").Get<KeysOptions>();
+
+            ArgumentNullException.ThrowIfNull(botConfig, nameof(botConfig));
+            if(keysCofig == null || string.IsNullOrEmpty(keysCofig.Public256KeyPath) || string.IsNullOrEmpty(keysCofig.Private256KeyPath))
+            {
+                throw new ArgumentNullException("Setup Keys.Public256KeyPath and Keys.Private256KeyPath configuration");
+            }
+
+            botConfig.Public256Key = (await File.ReadAllTextAsync(keysCofig.Public256KeyPath));
+            botConfig.Private256Key = await File.ReadAllTextAsync(keysCofig.Private256KeyPath);
+
+            builder.Services.AddCarInsuranceTelegramBot(botConfig);
         }
     }
 }
