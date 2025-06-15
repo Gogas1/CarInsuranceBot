@@ -2,12 +2,6 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace CarInsuranceBot.Pdf
 {
@@ -66,12 +60,12 @@ namespace CarInsuranceBot.Pdf
                 {
                     column.Spacing(1.15f, Unit.Millimetre);
                     column.Item()
-                        .Text("DUMMY")                        
+                        .Text("DUMMY")
                         .FontSize(14).Bold();
 
                     column.Item()
-                        .Text("Insurance Policy")                        
-                        .FontSize(14);                    
+                        .Text("Insurance Policy")
+                        .FontSize(14);
                 });
             });
         }
@@ -83,10 +77,11 @@ namespace CarInsuranceBot.Pdf
                 .PaddingVertical(18)
                 .Row(row =>
                 {
-                    row.RelativeItem().Column(column => {
+                    row.RelativeItem().Column(column =>
+                    {
 
                         column.Item().Element(ComposeTable);
-                        
+
                         column.Item().PaddingTop(18f).Text("Coverage Details").FontSize(14);
 
                         column.Item().PaddingTop(18f).Element(ComposeCoverageDetails);

@@ -2,7 +2,6 @@ using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Extensions;
 using CarInsuranceBot.WebApi.Configuration;
 using CarInsuranceBot.WebApi.Extensions;
-using System.Threading.Tasks;
 
 namespace CarInsuranceBot.WebApi
 {
@@ -18,7 +17,7 @@ namespace CarInsuranceBot.WebApi
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-            builder.Services.AddSqlServerDbContext();
+            builder.Services.AddSqlServerDbContext(true);
 
             await SetupTelegramBot(builder);
 
@@ -47,7 +46,13 @@ namespace CarInsuranceBot.WebApi
             var keysCofig = builder.Configuration.GetSection("Keys").Get<KeysOptions>();
 
             ArgumentNullException.ThrowIfNull(botConfig, nameof(botConfig));
-            if(keysCofig == null || string.IsNullOrEmpty(keysCofig.Public256KeyPath) || string.IsNullOrEmpty(keysCofig.Private256KeyPath))
+            if(!string.IsNullOrEmpty(botConfig.Public256Key) && !string.IsNullOrEmpty(botConfig.Private256Key))
+            {
+                builder.Services.AddCarInsuranceTelegramBot(botConfig);
+                return;
+            }
+
+            if (keysCofig == null || string.IsNullOrEmpty(keysCofig.Public256KeyPath) || string.IsNullOrEmpty(keysCofig.Private256KeyPath))
             {
                 throw new ArgumentNullException("Setup Keys.Public256KeyPath and Keys.Private256KeyPath configuration");
             }

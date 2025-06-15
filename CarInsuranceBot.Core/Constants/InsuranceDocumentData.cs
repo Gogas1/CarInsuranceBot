@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CarInsuranceBot.Core.Constants
+﻿namespace CarInsuranceBot.Core.Constants
 {
     internal static class InsuranceDocumentData
     {

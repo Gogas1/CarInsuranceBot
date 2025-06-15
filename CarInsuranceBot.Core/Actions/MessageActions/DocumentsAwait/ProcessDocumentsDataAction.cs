@@ -1,29 +1,18 @@
 ﻿using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
+using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Models.Documents;
 using CarInsuranceBot.Core.Services;
 using CarInsuranceBot.Core.Utils;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Mindee;
 using Mindee.Input;
-using Mindee.Parsing;
 using Mindee.Product.DriverLicense;
 using Mindee.Product.InternationalId;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Passport;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Passport;
-using Telegram.Bot.Types.ReplyMarkups;
-using CarInsuranceBot.Core.Constants;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 {
@@ -165,7 +154,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
                 dlDoc.ExpiryDate.ToString("yyyy.MM.dd")
             );
 
-            
+
 
             await _userService.SetUserInputStateAsync(userId, uis =>
             {
@@ -206,16 +195,16 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
         }
 
         private async Task<TDocument?> ProcessDocumentAsync<TDocument, TMindeeDocument>(
-            IEnumerable<EncryptedPassportElement> elements, 
-            EncryptedPassportElementType type, 
+            IEnumerable<EncryptedPassportElement> elements,
+            EncryptedPassportElementType type,
             FileCredentials? fileCredentials,
             Func<TMindeeDocument, TDocument?> mappingFunction,
             Func<TDocument?, bool> validationFunction,
             string fileName,
-            long userId, 
+            long userId,
             CancellationToken cancellationToken) where TMindeeDocument : class, new() where TDocument : class, new()
         {
-            if(fileCredentials == null)
+            if (fileCredentials == null)
             {
                 return null;
             }
@@ -244,7 +233,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 
             var doc = mappingFunction(response.Document.Inference);
 
-            if(!validationFunction(doc))
+            if (!validationFunction(doc))
             {
                 await SendExtractionErrorAsync(type, fileCredentials.FileHash, userId, cancellationToken: cancellationToken);
                 return null;
@@ -264,6 +253,6 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             await _botClient.SetPassportDataErrors(userId, [error], cancellationToken);
         }
 
-        
+
     }
 }

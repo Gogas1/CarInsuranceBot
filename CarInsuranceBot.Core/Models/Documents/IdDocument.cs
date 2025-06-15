@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CarInsuranceBot.Core.Models.Documents
+﻿namespace CarInsuranceBot.Core.Models.Documents
 {
     public class IdDocument
     {
@@ -17,7 +11,7 @@ namespace CarInsuranceBot.Core.Models.Documents
 
         public bool IsValid()
         {
-            return 
+            return
                 !string.IsNullOrEmpty(DocumentNumber) &&
                 !string.IsNullOrEmpty(CountryCode) &&
                 Surnames.Any() &&

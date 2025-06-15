@@ -1,21 +1,9 @@
-﻿using CarInsuranceBot.Core.Actions.Abstractions;
-using CarInsuranceBot.Core.Configuration;
+﻿using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Services;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Text.Encodings.Web;
-using System.Threading.Tasks;
-using System.Web;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using Telegram.Bot.Types.Passport;
-using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.Home
 {

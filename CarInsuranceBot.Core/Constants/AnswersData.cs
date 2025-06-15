@@ -1,9 +1,4 @@
 ﻿using CarInsuranceBot.Core.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types.Passport;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -97,8 +92,8 @@ namespace CarInsuranceBot.Core.Constants
             var authReq = GetAuthorizationRequestParameters(client, botConfig, nonce);
             InlineKeyboardButton[][] keyboard = [
                 [InlineKeyboardButton.WithUrl(
-                    AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT, 
-                    string.Format(AnswersData.REDIRECT_URL, authReq.Query))], 
+                    AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT,
+                    string.Format(AnswersData.REDIRECT_URL, authReq.Query))],
                 [new InlineKeyboardButton(AUTHORIZATION_DECLINE_BUTTON_TEXT, "decline")]
                 ];
             return keyboard;

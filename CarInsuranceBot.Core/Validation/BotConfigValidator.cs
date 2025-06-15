@@ -1,9 +1,4 @@
 ﻿using CarInsuranceBot.Core.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CarInsuranceBot.Core.Validation
 {
@@ -21,7 +16,7 @@ namespace CarInsuranceBot.Core.Validation
         /// <exception cref="ArgumentNullException"></exception>
         internal static void Validate(BotConfiguration configuration)
         {
-            if(configuration == null) throw new ArgumentNullException(nameof(configuration), "Bot configuration object cannot be null");
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration), "Bot configuration object cannot be null");
 
             if (string.IsNullOrEmpty(configuration.Token)) throw new ArgumentNullException(nameof(configuration.Token), "Bot token cannot be empty");
             if (string.IsNullOrEmpty(configuration.Public256Key)) throw new ArgumentNullException(nameof(configuration.Public256Key), "Public rsa key needed for documents processing");

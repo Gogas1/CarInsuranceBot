@@ -20,4 +20,13 @@
     <ProjectReference Include="..\CarInsuranceBot.Core\CarInsuranceBot.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="new_private.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="public_key.pem">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

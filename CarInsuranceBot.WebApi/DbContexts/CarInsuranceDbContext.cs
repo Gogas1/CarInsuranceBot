@@ -10,7 +10,7 @@ namespace CarInsuranceBot.WebApi.DbContexts
 
         public CarInsuranceDbContext(DbContextOptions options) : base(options)
         {
-            
+
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -22,7 +22,7 @@ namespace CarInsuranceBot.WebApi.DbContexts
 
             modelBuilder.Entity<UserInputState>()
                 .OwnsOne(us => us.CreateInsuranceFlow);
-            
+
             base.OnModelCreating(modelBuilder);
         }
     }

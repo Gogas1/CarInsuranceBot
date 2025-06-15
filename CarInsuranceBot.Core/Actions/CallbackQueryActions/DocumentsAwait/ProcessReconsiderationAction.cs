@@ -1,10 +1,5 @@
 ﻿using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -20,8 +15,8 @@ namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsAwait
         {
             await _botClient.AnswerCallbackQuery(update.Id, cancellationToken: cancellationToken);
             await _botClient.SendMessage(
-                update.From.Id, 
-                AnswersData.USER_RECONSIDERED_ANSWER_TEXT, 
+                update.From.Id,
+                AnswersData.USER_RECONSIDERED_ANSWER_TEXT,
                 replyMarkup: AnswersData.HOME_KEYBOARD,
                 cancellationToken: cancellationToken);
             await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.Home, update.From.Id, cancellationToken: cancellationToken);

@@ -1,9 +1,4 @@
 ﻿using OpenAI.Chat;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static CarInsuranceBot.Core.Constants.AnswersData;
 
 namespace CarInsuranceBot.Core.Services
@@ -11,7 +6,7 @@ namespace CarInsuranceBot.Core.Services
     internal class OpenAIService
     {
         private readonly ChatClient _chatClient;
-                
+
         private readonly string DIVERSIFY_SYSTEM_MESSAGE = @"You are an assistant embedded in a Telegram insurance‐bot. 
             At every turn:
             - You know the current Stage (e.g. “Processing user documents stage”) and State (e.g. “Documents sent”).
@@ -46,7 +41,7 @@ namespace CarInsuranceBot.Core.Services
                 Fallback text: {fallbackText}");
 
             var completion = await _chatClient.CompleteChatAsync(
-                [system, user], 
+                [system, user],
                 new ChatCompletionOptions
                 {
                     Temperature = 1,

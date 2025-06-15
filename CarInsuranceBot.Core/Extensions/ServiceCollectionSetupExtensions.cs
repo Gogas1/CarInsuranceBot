@@ -19,11 +19,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Mindee;
 using OpenAI.Chat;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -56,7 +51,7 @@ namespace CarInsuranceBot.Core.Extensions
 
         private static IServiceCollection AddOpenAiServices(this IServiceCollection services, BotConfiguration configuration)
         {
-            if(!string.IsNullOrEmpty(configuration.OpenAiKey))
+            if (!string.IsNullOrEmpty(configuration.OpenAiKey))
             {
                 services.AddSingleton<ChatClient>(new ChatClient("gpt-4.1-mini", configuration.OpenAiKey));
             }
@@ -125,9 +120,7 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddScoped<InsuranceService>();
             services.AddScoped<PdfService>();
             services.AddScoped<OpenAIService>();
-            
-            services.AddScoped<TestService>();
-            
+
             return services;
         }
 

@@ -18,14 +18,14 @@ namespace CarInsuranceBot.WebApi.Extensions
             return services;
         }
 
-        public static IServiceCollection AddSqlServerDbContext(this IServiceCollection services)
+        public static IServiceCollection AddSqlServerDbContext(this IServiceCollection services, bool useAzureSql)
         {
             services.AddDbContext<CarInsuranceDbContext>((serviceProvider, options) =>
             {
                 ConnectionStringsOptions? connectionStringsOptions = serviceProvider.GetService<IOptions<ConnectionStringsOptions>>()?.Value;
                 ArgumentNullException.ThrowIfNull(connectionStringsOptions, nameof(connectionStringsOptions));
 
-                options.UseSqlServer(connectionStringsOptions.SqlServer);
+                options.UseSqlServer(!useAzureSql ? connectionStringsOptions.SqlServer : connectionStringsOptions.AzureSqlServer);
             });
 
             return services;

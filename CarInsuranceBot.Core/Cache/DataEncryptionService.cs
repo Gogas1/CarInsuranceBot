@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace CarInsuranceBot.Core.Cache
 {
@@ -14,7 +9,7 @@ namespace CarInsuranceBot.Core.Cache
 
         public DataEncryptionService(byte[] key)
         {
-            if(key == null || key.Length != 32)
+            if (key == null || key.Length != 32)
             {
                 throw new ArgumentException("Key must be 32 bytes long", nameof(key));
             }

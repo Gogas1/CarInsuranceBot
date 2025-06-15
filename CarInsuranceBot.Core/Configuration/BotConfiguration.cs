@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CarInsuranceBot.Core.Configuration
+﻿namespace CarInsuranceBot.Core.Configuration
 {
     public class BotConfiguration
     {
@@ -23,7 +16,7 @@ namespace CarInsuranceBot.Core.Configuration
 
         public BotConfiguration()
         {
-            
+
         }
 
         public BotConfiguration(
@@ -49,7 +42,7 @@ namespace CarInsuranceBot.Core.Configuration
             string public256Key,
             string private256Key,
             string mindeeKey,
-            string openAiKey = "") 
+            string openAiKey = "")
             : this(
                   token,
                   secretKey,

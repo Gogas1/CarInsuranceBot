@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace CarInsuranceBot.Pdf
+﻿namespace CarInsuranceBot.Pdf
 {
     internal class InsuranceDocumentModel
     {
@@ -13,7 +7,7 @@ namespace CarInsuranceBot.Pdf
         public DateTime EffectiveDate { get; set; }
         public DateTime ExpirationDate { get; set; }
         public decimal PremiumAmount { get; set; }
-        public decimal BodilyInjuryLimitPerPerson  { get; set; }
+        public decimal BodilyInjuryLimitPerPerson { get; set; }
         public decimal BodilyInjuryLimitPerAccident { get; set; }
         public decimal PropertyDamageLimit { get; set; }
         public decimal CollisionDeductible { get; set; }

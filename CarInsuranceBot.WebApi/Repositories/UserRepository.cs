@@ -48,7 +48,7 @@ namespace CarInsuranceBot.WebApi.Repositories
             var targetUser = await _context.Users
                 .Include(u => u.InputState)
                 .FirstOrDefaultAsync(u => u.TelegramId == telegramId, cancellationToken);
-            if(targetUser == null)
+            if (targetUser == null)
             {
                 return null;
             }

@@ -1,36 +1,20 @@
 ﻿using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Constants;
-using CarInsuranceBot.Core.Models;
 using CarInsuranceBot.Core.Models.Documents;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Services
 {
-    public class DocumentsService
+    internal class DocumentsService
     {
         private readonly SecretCache _secretCache;
         private readonly UserService _userService;
         private readonly MemoryCache _cache;
         private readonly ITelegramBotClient _botClient;
 
-        public DocumentsService(IServiceProvider serviceProvider)
-        {
-            _secretCache = serviceProvider.GetRequiredService<SecretCache>();
-            _userService = serviceProvider.GetRequiredService<UserService>();
-            _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
-            _cache = serviceProvider.GetRequiredService<MemoryCache>();
-        }
-
-        internal DocumentsService(SecretCache secretCache, UserService userService, ITelegramBotClient botClient, MemoryCache cache)
+        public DocumentsService(SecretCache secretCache, UserService userService, ITelegramBotClient botClient, MemoryCache cache)
         {
             _secretCache = secretCache;
             _userService = userService;
@@ -49,7 +33,7 @@ namespace CarInsuranceBot.Core.Services
         internal string GetCachedNonce(long userId)
         {
             var nonceObject = _cache.Get($"nonce_{userId}");
-            if(nonceObject is string nonce)
+            if (nonceObject is string nonce)
             {
                 return nonce;
             }
@@ -60,7 +44,7 @@ namespace CarInsuranceBot.Core.Services
         internal async Task<UserDocuments?> GetDataForUserAsync(long userId, CancellationToken cancellationToken)
         {
             var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
-            if(string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey) || string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey))
+            if (string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey) || string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey))
             {
                 return null;
             }

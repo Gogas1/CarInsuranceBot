@@ -2,12 +2,6 @@
 using CarInsuranceBot.Core.Interfaces.Repositories;
 using CarInsuranceBot.Core.Models;
 using Microsoft.Extensions.Caching.Memory;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Services
 {
@@ -36,7 +30,7 @@ namespace CarInsuranceBot.Core.Services
         {
             var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId, cancellationToken);
 
-            if(targetUser == null)
+            if (targetUser == null)
             {
                 targetUser = new Models.MyUser()
                 {
@@ -98,7 +92,7 @@ namespace CarInsuranceBot.Core.Services
         {
             var inputState = await _userRepository.GetUserInputStateByTelegramIdAsync(telegramId, cancellationToken);
 
-            if(inputState == null)
+            if (inputState == null)
             {
                 return new UserInputState();
             }

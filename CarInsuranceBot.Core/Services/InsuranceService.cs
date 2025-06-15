@@ -1,12 +1,4 @@
-﻿using CarInsuranceBot.Core.Constants;
-using CarInsuranceBot.Core.Models.Documents;
-using CarInsuranceBot.Pdf;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CarInsuranceBot.Pdf;
 
 namespace CarInsuranceBot.Core.Services
 {
