@@ -1,4 +1,5 @@
 ﻿using CarInsuranceBot.Core.Actions.Abstractions;
+using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsConfirmationAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.Home;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwait;
@@ -6,6 +7,7 @@ using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceSecondConfirmation;
 using CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.Home;
 using CarInsuranceBot.Core.Actions.MessageActions.None;
+using CarInsuranceBot.Core.Actions.MessageActions.Test;
 using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Enums;
@@ -16,6 +18,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Mindee;
+using OpenAI.Chat;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -40,12 +43,23 @@ namespace CarInsuranceBot.Core.Extensions
 
             services.AddBotOptions(configuration)
                 .AddSecretCache(configuration)
+                .AddOpenAiServices(configuration)
                 .AddApiServices(configuration)
                 .AddBotClient()
                 .AddServices()
                 .AddActions()
                 .AddActionFactories()
                 .AddHostedService<PollingService>();
+
+            return services;
+        }
+
+        private static IServiceCollection AddOpenAiServices(this IServiceCollection services, BotConfiguration configuration)
+        {
+            if(!string.IsNullOrEmpty(configuration.OpenAiKey))
+            {
+                services.AddSingleton<ChatClient>(new ChatClient("gpt-4.1-mini", configuration.OpenAiKey));
+            }
 
             return services;
         }
@@ -78,6 +92,7 @@ namespace CarInsuranceBot.Core.Extensions
                     options.SecretKey = configuration.SecretKey;
                     options.Public256Key = configuration.Public256Key;
                     options.Private256Key = configuration.Private256Key;
+                    options.OpenAiKey = configuration.OpenAiKey;
                 });
 
             return services;
@@ -108,16 +123,21 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddScoped<UserService>();
             services.AddScoped<DocumentsService>();
             services.AddScoped<InsuranceService>();
-            services.AddScoped<PdfService>();            
+            services.AddScoped<PdfService>();
+            services.AddScoped<OpenAIService>();
+            
+            services.AddScoped<TestService>();
             
             return services;
         }
 
         private static IServiceCollection AddActions(this IServiceCollection services)
         {
-            services.AddTransient<HelloMessage>();
+            services.AddTransient<HelloMessageAction>();
             services.AddTransient<DefaultHomeMessage>();
+            services.AddTransient<TestAction>();
 
+            services.AddTransient<ProcessReconsiderationAction>();
             services.AddTransient<InitCreateInsuranceFlow>();
             services.AddTransient<ProcessDocumentsDataAction>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
@@ -135,9 +155,10 @@ namespace CarInsuranceBot.Core.Extensions
 
                 var actions = new Dictionary<UserState, Func<ActionBase<Message>>>
                 {
-                    { UserState.None, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<HelloMessage>() },
-                    { UserState.Home, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<DefaultHomeMessage>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<ProcessDocumentsDataAction>() },
+                    { UserState.None, () => scopeFactory.GetAction<Message, HelloMessageAction>() },
+                    { UserState.Home, () => scopeFactory.GetAction<Message, DefaultHomeMessage>() },
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() },
+                    { UserState.TestUserState, () => scopeFactory.GetAction<Message, TestAction>() }
                 };
 
                 return new ActionsFactory<Message>(actions);
@@ -149,16 +170,22 @@ namespace CarInsuranceBot.Core.Extensions
 
                 var actions = new Dictionary<UserState, Func<ActionBase<CallbackQuery>>>
                 {
-                    { UserState.Home, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<InitCreateInsuranceFlow>() },
-                    { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<ProcessDataConfirmationCallbackAction>() },
-                    { UserState.PriceConfirmationAwait, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<ProcessPriceConfirmationCallbackAction>() },
-                    { UserState.PriceSecondConfirmationAwait, () => scopeFactory.CreateScope().ServiceProvider.GetRequiredService<ProcessSecondPriceConfirmationCallbackAction>() },
+                    { UserState.Home, () => scopeFactory.GetAction<CallbackQuery, InitCreateInsuranceFlow>() },
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessReconsiderationAction>() },
+                    { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDataConfirmationCallbackAction>() },
+                    { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPriceConfirmationCallbackAction>() },
+                    { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction >() },
                 };
 
                 return new ActionsFactory<CallbackQuery>(actions);
             });
 
             return services;
+        }
+
+        private static ActionBase<TUpdateType> GetAction<TUpdateType, TImplementation>(this IServiceScopeFactory scopeFactory) where TImplementation : ActionBase<TUpdateType>
+        {
+            return scopeFactory.CreateScope().ServiceProvider.GetRequiredService<TImplementation>();
         }
     }
 }

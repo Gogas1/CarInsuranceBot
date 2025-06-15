@@ -18,35 +18,33 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwait
 {
-    internal class ProcessPriceConfirmationCallbackAction : ActionBase<CallbackQuery>
+    internal class ProcessPriceConfirmationCallbackAction : CallbackQueryActionBase
     {
-        private readonly UserService _userService;
-        private readonly ITelegramBotClient _botClient;
         private readonly BotConfiguration _botConfig;
-        private readonly MemoryCache _cache;
-
         private readonly InsuranceService _insuranceService;
         private readonly PdfService _pdfService;
+        protected readonly OpenAIService _openAiService;
+        private readonly DocumentsService _documentsService;
 
         public ProcessPriceConfirmationCallbackAction(
             UserService userService,
             ITelegramBotClient botClient,
             IOptions<BotConfiguration> botOptions,
-            MemoryCache cache,
             InsuranceService insuranceService,
-            PdfService pdfService)
+            PdfService pdfService,
+            OpenAIService openAIService,
+            DocumentsService documentsService) : base(userService, botClient)
         {
-            _userService = userService;
-            _botClient = botClient;
             _botConfig = botOptions.Value;
-            _cache = cache;
             _insuranceService = insuranceService;
             _pdfService = pdfService;
+            _openAiService = openAIService;
+            _documentsService = documentsService;
         }
 
-        public override async Task Execute(CallbackQuery update)
+        protected override async Task ProcessLogicAsync(CallbackQuery update, CancellationToken cancellationToken)
         {
-            await _botClient.AnswerCallbackQuery(update.Id);
+            await _botClient.AnswerCallbackQuery(update.Id, cancellationToken: cancellationToken);
 
             var data = update.Data;
             if (data == null)
@@ -54,36 +52,33 @@ namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwa
                 return;
             }
 
-            if (data == AnswersData.DataConfirmationButtonData)
+            if (data == AnswersData.DATA_CONFIRMATION_BUTTON_DATA)
             {
-                await ProcessAgreement(update);
+                await ProcessAgreement(update, cancellationToken);
                 return;
             }
 
-            if (data == AnswersData.DataDeclineButtonData)
+            if (data == AnswersData.DATA_DECLINE_BUTTON_DATA)
             {
-                await ProcessDecline(update);
+                await ProcessDecline(update, cancellationToken);
                 return;
             }
         }
 
-        protected virtual async Task ProcessAgreement(CallbackQuery update)
+        protected virtual async Task ProcessAgreement(CallbackQuery update, CancellationToken cancellationToken)
         {
-            var insuranceDocumentData = await _insuranceService.CreateInsuranceForUser(update.From.Id);
+            var insuranceDocumentData = await _insuranceService.CreateInsuranceForUser(update.From.Id, cancellationToken);
 
             if (insuranceDocumentData == null)
             {
-                var newNonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
-                var authReq = AnswersData.GetAuthorizationRequestParameters(_botClient, _botConfig, newNonce);
+                var newNonce = _documentsService.SetNonceForUser(update.From.Id);
 
-                _cache.Set($"nonce_{update.From.Id}", newNonce, TimeSpan.FromMinutes(10));
                 await _botClient.SendMessage(
                     update.From.Id,
-                    AnswersData.NoStoredDocumentsText,
-                    replyMarkup: InlineKeyboardButton.WithUrl(
-                        AnswersData.ShareDocumentButtonText,
-                        string.Format(AnswersData.RedirectUrl, authReq.Query)));
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id);
+                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_STORED_DOCUMENTS_SETTINGS, cancellationToken),
+                    replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce),
+                    cancellationToken: cancellationToken);
+                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
                 return;
             }
 
@@ -91,13 +86,25 @@ namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwa
             _pdfService.GenerateInsurancePdf(insuranceDocumentData, stream);
             stream.Position = 0;
             var file = new InputFileStream(stream, "INSURANCE POLICY");
-            await _botClient.SendDocument(update.From.Id, file);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.Home, update.From.Id, cancellationToken);
+            await _botClient.SendDocument(update.From.Id, file, cancellationToken: cancellationToken);
+            await _botClient.SendMessage(
+                update.From.Id,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.INSURANCE_GRANTED_SETTINGS, cancellationToken),
+                replyMarkup: AnswersData.HOME_KEYBOARD,
+                cancellationToken: cancellationToken);
         }
 
-        protected virtual async Task ProcessDecline(CallbackQuery update)
+        protected virtual async Task ProcessDecline(CallbackQuery update, CancellationToken cancellationToken)
         {
-            await _botClient.SendMessage(update.From.Id, AnswersData.FirstPriceDeclineText, replyMarkup: AnswersData.PriceConfirmationKeyboard);
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceSecondConfirmationAwait, update.From.Id);
+            await _botClient.SendMessage(
+                update.From.Id,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.FIRST_PRICE_DECLINE_SETTINGS, cancellationToken),
+                replyMarkup: AnswersData.PRICE_CONFIRMATION_KEYBOARD,
+                cancellationToken: cancellationToken);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceSecondConfirmationAwait, update.From.Id, cancellationToken);
         }
+
+        
     }
 }

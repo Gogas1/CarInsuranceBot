@@ -52,7 +52,7 @@ namespace CarInsuranceBot.WebApi
                 throw new ArgumentNullException("Setup Keys.Public256KeyPath and Keys.Private256KeyPath configuration");
             }
 
-            botConfig.Public256Key = (await File.ReadAllTextAsync(keysCofig.Public256KeyPath));
+            botConfig.Public256Key = await File.ReadAllTextAsync(keysCofig.Public256KeyPath);
             botConfig.Private256Key = await File.ReadAllTextAsync(keysCofig.Private256KeyPath);
 
             builder.Services.AddCarInsuranceTelegramBot(botConfig);

@@ -10,10 +10,12 @@ namespace CarInsuranceBot.WebApi.Controllers
     public class IndexController : ControllerBase
     {
         private readonly DocumentsService _documentsService;
+        private readonly TestService _testService;
 
-        public IndexController(DocumentsService documentsService)
+        public IndexController(DocumentsService documentsService, TestService testService)
         {
             _documentsService = documentsService;
+            _testService = testService;
         }
 
         [HttpGet]
@@ -25,7 +27,14 @@ namespace CarInsuranceBot.WebApi.Controllers
         [HttpPost("documents")]
         public async Task<IActionResult> SetUserDocuments([FromBody] SetUserDocumentsModel model)
         {
-            await _documentsService.SetDocumentsForUser(model.UserId, model.IdDocument, model.LicenseDocument);
+            await _documentsService.SetDocumentsForUser(model.UserId, model.IdDocument, model.LicenseDocument, default);
+            return Ok();
+        }
+
+        [HttpPost("test")]
+        public async Task<IActionResult> SetUserTestState(long userId)
+        {
+            await _testService.ToTestState(userId);
             return Ok();
         }
 

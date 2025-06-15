@@ -1,5 +1,6 @@
 ﻿using CarInsuranceBot.Core.Actions.Abstractions;
 using CarInsuranceBot.Core.Configuration;
+using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Services;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -18,47 +19,34 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.Home
 {
-    internal class InitCreateInsuranceFlow : ActionBase<CallbackQuery>
+    internal class InitCreateInsuranceFlow : CallbackQueryActionBase
     {
-        private readonly UserService _userService;
-        private readonly ITelegramBotClient _botClient;
         private readonly BotConfiguration _botConfig;
-        private readonly MemoryCache _cache;
+        private readonly OpenAIService _openAIService;
+        private readonly DocumentsService _documentsService;
 
-        private string FallbackMessageText = "Starting getting an insurance for you. Please, provide a photo of your ID and driver license.";
-
-        public InitCreateInsuranceFlow(UserService userService, ITelegramBotClient botClient, IOptions<BotConfiguration> botOptions, MemoryCache cache)
+        public InitCreateInsuranceFlow(
+            UserService userService,
+            ITelegramBotClient botClient,
+            IOptions<BotConfiguration> botOptions,
+            OpenAIService openAIService,
+            DocumentsService documentsService) : base(userService, botClient)
         {
-            _userService = userService;
-            _botClient = botClient;
             _botConfig = botOptions.Value;
-            _cache = cache;
+            _openAIService = openAIService;
+            _documentsService = documentsService;
         }
 
-        public override async Task Execute(CallbackQuery update)
+        protected override async Task ProcessLogicAsync(CallbackQuery update, CancellationToken cancellationToken)
         {
-            await _botClient.AnswerCallbackQuery(update.Id, FallbackMessageText);
-            var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
-            AuthorizationRequestParameters authReq = new AuthorizationRequestParameters(
-                botId: _botClient.BotId,
-                publicKey: _botConfig.Public256Key,
-                nonce: nonce,
-                scope: new PassportScope
-                {
-                    Data = [
-                        new PassportScopeElementOne(EncryptedPassportElementType.Passport),
-                        new PassportScopeElementOne(EncryptedPassportElementType.DriverLicense)
-                        ]
-                }
-                );
+            await _botClient.AnswerCallbackQuery(update.Id);
+            var nonce = _documentsService.SetNonceForUser(update.From.Id);
 
             await _botClient.SendMessage(
-                update.From.Id, 
-                FallbackMessageText,                
-                replyMarkup: InlineKeyboardButton.WithUrl("Share via Passport", $"https://gogas1.github.io/CarInsuranceBot/redirect.html?{authReq.Query}"));
-            _cache.Set(update.From.Id, nonce, TimeSpan.FromMinutes(10));
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id);
-
+                update.From.Id,
+                await _openAIService.GetDiversifiedAnswer(AnswersData.START_INSURANCE_WORKFLOW_SETTINGS, cancellationToken),
+                replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, nonce));
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
         }
     }
 }

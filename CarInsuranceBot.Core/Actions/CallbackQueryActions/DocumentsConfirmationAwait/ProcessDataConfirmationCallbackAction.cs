@@ -16,51 +16,55 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsConfirmationAwait
 {
-    internal class ProcessDataConfirmationCallbackAction : ActionBase<CallbackQuery>
+    internal class ProcessDataConfirmationCallbackAction : CallbackQueryActionBase
     {
-        private readonly UserService _userService;
-        private readonly ITelegramBotClient _botClient;
-        private readonly BotConfiguration _botConfig;
-        private readonly MemoryCache _cache;
 
-        public ProcessDataConfirmationCallbackAction(UserService userService, ITelegramBotClient botClient, IOptions<BotConfiguration> botOptions, MemoryCache cache)
+        private readonly BotConfiguration _botConfig;
+        private readonly OpenAIService _openAIService;
+        private readonly DocumentsService _documentsService;
+
+        public ProcessDataConfirmationCallbackAction(
+            UserService userService,
+            ITelegramBotClient botClient,
+            IOptions<BotConfiguration> botOptions,
+            OpenAIService openAIService,
+            DocumentsService documentsService) : base(userService, botClient)
         {
-            _userService = userService;
-            _botClient = botClient;
             _botConfig = botOptions.Value;
-            _cache = cache;
+            _openAIService = openAIService;
+            _documentsService = documentsService;
         }
 
-        public override async Task Execute(CallbackQuery update)
+        protected override async Task ProcessLogicAsync(CallbackQuery update, CancellationToken cancellationToken)
         {
             await _botClient.AnswerCallbackQuery(update.Id);
-            
+
             var data = update.Data;
-            if(data == null)
+            if (data == null)
             {
                 return;
             }
 
-            if (data == AnswersData.DataConfirmationButtonData)
+            if (data == AnswersData.DATA_CONFIRMATION_BUTTON_DATA)
             {
-                await _botClient.SendMessage(update.From.Id, AnswersData.DataConfirmedFallbackText, replyMarkup: AnswersData.PriceConfirmationKeyboard);
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceConfirmationAwait, update.From.Id);
-                return;
-            }
-
-            if (data == AnswersData.DataDeclineButtonData)
-            {
-                var newNonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
-                var authReq = AnswersData.GetAuthorizationRequestParameters(_botClient, _botConfig, newNonce);
-
-                _cache.Set($"nonce_{update.From.Id}", newNonce, TimeSpan.FromMinutes(10));
                 await _botClient.SendMessage(
                     update.From.Id,
-                    AnswersData.DataDeclinedFallbackText,
-                    replyMarkup: InlineKeyboardButton.WithUrl(
-                        AnswersData.ShareDocumentButtonText,
-                        string.Format(AnswersData.RedirectUrl, authReq.Query)));
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id);
+                    await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_CONFIRMED_SETTINGS, cancellationToken),
+                    replyMarkup: AnswersData.PRICE_CONFIRMATION_KEYBOARD,
+                    cancellationToken: cancellationToken);
+                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceConfirmationAwait, update.From.Id, cancellationToken);
+                return;
+            }
+
+            if (data == AnswersData.DATA_DECLINE_BUTTON_DATA)
+            {
+                var newNonce = _documentsService.SetNonceForUser(update.From.Id);
+
+                await _botClient.SendMessage(
+                    update.From.Id,
+                    await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_DECLINED_SETTINGS, cancellationToken),
+                    replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce));
+                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
                 return;
             }
         }

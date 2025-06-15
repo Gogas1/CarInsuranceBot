@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.Core.Actions.Abstractions;
+﻿using CarInsuranceBot.Core.Abstractions;
+using CarInsuranceBot.Core.Actions.Abstractions;
 using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.States.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,19 +34,30 @@ namespace CarInsuranceBot.Core.Services
             return Task.CompletedTask;
         }
 
-        public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        public Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            await(update switch
+            _ = Task.Run(async () =>
             {
-                { Message: { } message } => OnMessage(message),
-                { CallbackQuery: { } callback } => OnCallbackQuery(callback),
-                _ => UnknownUpdateHandlerAsync(update)
-            });
+                switch (update)
+                {
+                    case { Message: { } message }:
+                        await OnMessage(message, cancellationToken);
+                        break;
+                    case { CallbackQuery: { } callback }:
+                        await OnCallbackQuery(callback, cancellationToken);
+                        break;
+                    default:
+                        await UnknownUpdateHandlerAsync(update, cancellationToken);
+                        break;
+                }
+            }, cancellationToken);
+
+            return Task.CompletedTask;
         }
 
-        private async Task OnMessage(Message msg)
+        private async Task OnMessage(Message msg, CancellationToken cancellationToken)
         {
             if (msg.From == null)
             {
@@ -58,7 +70,7 @@ namespace CarInsuranceBot.Core.Services
                 var userService = sp.GetRequiredService<UserService>();
                 var messageActionFactory = sp.GetRequiredService<ActionsFactory<Message>>();
 
-                UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id);
+                UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id, cancellationToken);
 
                 ActionBase<Message>? targetStateHandler = messageActionFactory.GetActionForState(userState);
 
@@ -67,13 +79,13 @@ namespace CarInsuranceBot.Core.Services
                     return;
                 }
 
-                await targetStateHandler.Execute(msg);
+                await targetStateHandler.Execute(new MessageUpdateWrapper(msg), cancellationToken);
 
             }
 
         }
 
-        private async Task OnCallbackQuery(CallbackQuery callback)
+        private async Task OnCallbackQuery(CallbackQuery callback, CancellationToken cancellationToken)
         {
             using (var scope = _scopeFactory.CreateScope())
             {
@@ -81,7 +93,7 @@ namespace CarInsuranceBot.Core.Services
                 var userService = sp.GetRequiredService<UserService>();
                 var callbackQueryActionFactory = sp.GetRequiredService<ActionsFactory<CallbackQuery>>();
 
-                UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id);
+                UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id, cancellationToken);
 
                 ActionBase<CallbackQuery>? targetStateHandler = callbackQueryActionFactory.GetActionForState(userState);
 
@@ -90,12 +102,12 @@ namespace CarInsuranceBot.Core.Services
                     return;
                 }
 
-                await targetStateHandler.Execute(callback);
+                await targetStateHandler.Execute(new CallbackQueryUpdateWrapper(callback), cancellationToken);
 
             }
         }
 
-        private Task UnknownUpdateHandlerAsync(Update update)
+        private Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;
         }

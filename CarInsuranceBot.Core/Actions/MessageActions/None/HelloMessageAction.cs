@@ -1,7 +1,8 @@
-﻿using CarInsuranceBot.Core.Constants;
+﻿using CarInsuranceBot.Core.Actions.Abstractions;
+using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Services;
-using OpenAI;
+using CarInsuranceBot.Core.States.Abstractions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,15 +12,16 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
 
-namespace CarInsuranceBot.Core.Actions.MessageActions.Home
+namespace CarInsuranceBot.Core.Actions.MessageActions.None
 {
-    internal class DefaultHomeMessage : MessageActionBase
+    internal class HelloMessageAction : MessageActionBase
     {
+
         private readonly OpenAIService _openAiService;
 
-        public DefaultHomeMessage(UserService userService, ITelegramBotClient botClient, OpenAIService openAIService) : base(userService, botClient)
+        public HelloMessageAction(UserService userService, ITelegramBotClient botClient, OpenAIService openAiService) : base(userService, botClient)
         {
-            _openAiService = openAIService;
+            _openAiService = openAiService;
         }
 
         protected override async Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
@@ -29,10 +31,11 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Home
                 return;
             }
 
+            var inlineKeyboard = new InlineKeyboardButton("Get Insurance", "get_insurance");
             await _botClient.SendMessage(
                 update.Chat,
-                await _openAiService.GetDiversifiedAnswer(AnswersData.HOME_MESSAGE_SETTINGS, cancellationToken),
-                replyMarkup: AnswersData.HOME_KEYBOARD,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.HELLO_MESSAGE_SETTINGS, cancellationToken),
+                replyMarkup: inlineKeyboard,
                 cancellationToken: cancellationToken);
             await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id, cancellationToken);
         }

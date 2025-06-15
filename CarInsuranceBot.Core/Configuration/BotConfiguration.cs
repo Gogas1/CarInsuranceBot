@@ -19,23 +19,44 @@ namespace CarInsuranceBot.Core.Configuration
         public required string Public256Key { get; set; } = string.Empty;
         public required string Private256Key { get; set; } = string.Empty;
         public required string MindeeKey { get; set; } = string.Empty;
+        public string OpenAiKey { get; set; } = string.Empty;
 
         public BotConfiguration()
         {
             
         }
 
-        public BotConfiguration(string token, string secretKey, string public256Key, string private256Key, string mindeeKey)
+        public BotConfiguration(
+            string token,
+            string secretKey,
+            string public256Key,
+            string private256Key,
+            string mindeeKey,
+            string openAiKey = "")
         {
             Token = token;
             SecretKey = secretKey;
             Public256Key = public256Key;
             Private256Key = private256Key;
             MindeeKey = mindeeKey;
+            OpenAiKey = openAiKey;
         }
 
-        public BotConfiguration(string token, string secretKey, List<long> adminIds, string public256Key, string private256Key, string mindeeKey) 
-            : this(token, secretKey, public256Key, private256Key, mindeeKey)
+        public BotConfiguration(
+            string token,
+            string secretKey,
+            List<long> adminIds,
+            string public256Key,
+            string private256Key,
+            string mindeeKey,
+            string openAiKey = "") 
+            : this(
+                  token,
+                  secretKey,
+                  public256Key,
+                  private256Key,
+                  mindeeKey,
+                  openAiKey)
         {
             AdminIds = adminIds;
         }

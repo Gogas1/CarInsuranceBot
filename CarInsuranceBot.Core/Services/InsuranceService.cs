@@ -19,9 +19,9 @@ namespace CarInsuranceBot.Core.Services
             _documentsService = documentsService;
         }
 
-        public async Task<InsuranceDocumentModel?> CreateInsuranceForUser(long telegramUserId)
+        public async Task<InsuranceDocumentModel?> CreateInsuranceForUser(long telegramUserId, CancellationToken cancellationToken)
         {
-            var data = await _documentsService.GetDataForUserAsync(telegramUserId);
+            var data = await _documentsService.GetDataForUserAsync(telegramUserId, cancellationToken);
             if (data == null)
             {
                 return null;
@@ -32,8 +32,8 @@ namespace CarInsuranceBot.Core.Services
             {
                 PolicyNumber = "PN12345",
                 InsuredName = $"{data.idDocument.Names.FirstOrDefault(string.Empty)} {data.idDocument.Surnames.FirstOrDefault(string.Empty)}",
-                EffectiveDate = new DateTime(2025, 1, 1),
-                ExpirationDate = new DateTime(2026, 1, 1),
+                EffectiveDate = DateTime.Today,
+                ExpirationDate = DateTime.Today,
                 PremiumAmount = premium,
                 BodilyInjuryLimitPerPerson = 500m * premium,
                 BodilyInjuryLimitPerAccident = 1000m * premium,
@@ -53,7 +53,7 @@ namespace CarInsuranceBot.Core.Services
                 SignDate = DateTime.Today
             };
 
-            await _documentsService.DeleteUserDataAsync(telegramUserId);
+            await _documentsService.DeleteUserDataAsync(telegramUserId, cancellationToken);
 
             return documentModel;
         }

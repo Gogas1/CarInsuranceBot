@@ -2,10 +2,12 @@
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Models;
 using CarInsuranceBot.Core.Models.Documents;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
@@ -17,6 +19,7 @@ namespace CarInsuranceBot.Core.Services
     {
         private readonly SecretCache _secretCache;
         private readonly UserService _userService;
+        private readonly MemoryCache _cache;
         private readonly ITelegramBotClient _botClient;
 
         public DocumentsService(IServiceProvider serviceProvider)
@@ -24,18 +27,39 @@ namespace CarInsuranceBot.Core.Services
             _secretCache = serviceProvider.GetRequiredService<SecretCache>();
             _userService = serviceProvider.GetRequiredService<UserService>();
             _botClient = serviceProvider.GetRequiredService<ITelegramBotClient>();
+            _cache = serviceProvider.GetRequiredService<MemoryCache>();
         }
 
-        internal DocumentsService(SecretCache secretCache, UserService userService, ITelegramBotClient botClient)
+        internal DocumentsService(SecretCache secretCache, UserService userService, ITelegramBotClient botClient, MemoryCache cache)
         {
             _secretCache = secretCache;
             _userService = userService;
             _botClient = botClient;
+            _cache = cache;
         }
 
-        internal async Task<UserDocuments?> GetDataForUserAsync(long userId)
+        internal string SetNonceForUser(long userId)
         {
-            var userInputState = await _userService.GetUserInputStateAsync(userId);
+            var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
+            _cache.Set($"nonce_{userId}", nonce, TimeSpan.FromMinutes(10));
+
+            return nonce;
+        }
+
+        internal string GetCachedNonce(long userId)
+        {
+            var nonceObject = _cache.Get($"nonce_{userId}");
+            if(nonceObject is string nonce)
+            {
+                return nonce;
+            }
+
+            return string.Empty;
+        }
+
+        internal async Task<UserDocuments?> GetDataForUserAsync(long userId, CancellationToken cancellationToken)
+        {
+            var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
             if(string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey) || string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey))
             {
                 return null;
@@ -52,9 +76,9 @@ namespace CarInsuranceBot.Core.Services
             return new UserDocuments(idData, licenseData);
         }
 
-        internal async Task DeleteUserDataAsync(long userId)
+        internal async Task DeleteUserDataAsync(long userId, CancellationToken cancellationToken)
         {
-            var userInputState = await _userService.GetUserInputStateAsync(userId);
+            var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
             if (string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey) || string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey))
             {
                 return;
@@ -64,19 +88,19 @@ namespace CarInsuranceBot.Core.Services
             await _secretCache.DeleteAsync(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey);
         }
 
-        public async Task SetDocumentsForUser(long userId, IdDocument idDocument, DriverLicenseDocument licenseDocument)
+        public async Task SetDocumentsForUser(long userId, IdDocument idDocument, DriverLicenseDocument licenseDocument, CancellationToken cancellationToken)
         {
             var idKey = await _secretCache.StoreAsync(idDocument, TimeSpan.FromMinutes(30));
             var dlKey = await _secretCache.StoreAsync(licenseDocument, TimeSpan.FromMinutes(30));
 
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, userId);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, userId, cancellationToken);
             await _userService.SetUserInputStateAsync(userId, uis =>
             {
                 uis.CreateInsuranceFlow.IdCacheKey = idKey;
                 uis.CreateInsuranceFlow.DriverLicenseCacheKey = dlKey;
-            });
+            }, cancellationToken);
 
-            await _botClient.SendMessage(userId, "Do you confirm data?", replyMarkup: AnswersData.DataConfirmationKeyboard);
+            await _botClient.SendMessage(userId, "Do you confirm data?", replyMarkup: AnswersData.DATA_CONFIRMATION_KEYBOARD);
         }
 
         internal class UserDocuments

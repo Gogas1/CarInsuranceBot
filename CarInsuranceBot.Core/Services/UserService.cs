@@ -1,26 +1,40 @@
 ﻿using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Interfaces.Repositories;
 using CarInsuranceBot.Core.Models;
+using Microsoft.Extensions.Caching.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Services
 {
     internal class UserService
     {
         private readonly ITelegramBotUserRepository _userRepository;
+        private readonly MemoryCache _memoryCache;
 
-        public UserService(ITelegramBotUserRepository userRepository)
+        public UserService(ITelegramBotUserRepository userRepository, MemoryCache memoryCache)
         {
             _userRepository = userRepository;
+            _memoryCache = memoryCache;
         }
 
-        public async Task<UserState> GetUserStateByTelegramIdAsync(long telegramId)
+        public void SetUserBusy(long userId, bool isBusy)
         {
-            var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId);
+            _memoryCache.Set($"busy_{userId}", isBusy, TimeSpan.FromSeconds(60));
+        }
+
+        public bool IsUserBusy(long userId)
+        {
+            return _memoryCache.Get<bool>($"busy_{userId}");
+        }
+
+        public async Task<UserState> GetUserStateByTelegramIdAsync(long telegramId, CancellationToken cancellationToken)
+        {
+            var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId, cancellationToken);
 
             if(targetUser == null)
             {
@@ -30,15 +44,15 @@ namespace CarInsuranceBot.Core.Services
                     UserState = UserState.None,
                 };
 
-                await _userRepository.CreateAsync(targetUser);
+                await _userRepository.CreateAsync(targetUser, cancellationToken);
             }
 
             return targetUser.UserState;
         }
 
-        public async Task SetUserStateByTelegramIdAsync(UserState newState, long telegramId)
+        public async Task SetUserStateByTelegramIdAsync(UserState newState, long telegramId, CancellationToken cancellationToken)
         {
-            var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId);
+            var targetUser = await _userRepository.GetUserByTelegramIdAsync(telegramId, cancellationToken);
 
             if (targetUser == null)
             {
@@ -48,7 +62,7 @@ namespace CarInsuranceBot.Core.Services
                     UserState = newState,
                 };
 
-                await _userRepository.CreateAsync(targetUser);
+                await _userRepository.CreateAsync(targetUser, cancellationToken);
                 return;
             }
 
@@ -58,12 +72,12 @@ namespace CarInsuranceBot.Core.Services
             }
 
             targetUser.UserState = newState;
-            await _userRepository.UpdateAsync(targetUser);
+            await _userRepository.UpdateAsync(targetUser, cancellationToken);
         }
 
-        public async Task SetUserInputStateAsync(long telegramId, Action<UserInputState> handler)
+        public async Task SetUserInputStateAsync(long telegramId, Action<UserInputState> handler, CancellationToken cancellationToken)
         {
-            var targetUser = await _userRepository.GetUserWithInputStateByTelegramIdAsync(telegramId);
+            var targetUser = await _userRepository.GetUserWithInputStateByTelegramIdAsync(telegramId, cancellationToken);
             if (targetUser == null)
             {
                 targetUser = new MyUser
@@ -71,18 +85,18 @@ namespace CarInsuranceBot.Core.Services
                     TelegramId = telegramId,
                     InputState = new UserInputState()
                 };
-                await _userRepository.CreateAsync(targetUser);
+                await _userRepository.CreateAsync(targetUser, cancellationToken);
                 return;
             }
 
             targetUser.InputState ??= new UserInputState();
             handler(targetUser.InputState);
-            await _userRepository.UpdateAsync(targetUser);
+            await _userRepository.UpdateAsync(targetUser, cancellationToken);
         }
 
-        public async Task<UserInputState> GetUserInputStateAsync(long telegramId)
+        public async Task<UserInputState> GetUserInputStateAsync(long telegramId, CancellationToken cancellationToken)
         {
-            var inputState = await _userRepository.GetUserInputStateByTelegramIdAsync(telegramId);
+            var inputState = await _userRepository.GetUserInputStateByTelegramIdAsync(telegramId, cancellationToken);
 
             if(inputState == null)
             {

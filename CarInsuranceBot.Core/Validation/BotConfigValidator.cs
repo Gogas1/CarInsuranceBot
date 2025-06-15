@@ -24,6 +24,9 @@ namespace CarInsuranceBot.Core.Validation
             if(configuration == null) throw new ArgumentNullException(nameof(configuration), "Bot configuration object cannot be null");
 
             if (string.IsNullOrEmpty(configuration.Token)) throw new ArgumentNullException(nameof(configuration.Token), "Bot token cannot be empty");
+            if (string.IsNullOrEmpty(configuration.Public256Key)) throw new ArgumentNullException(nameof(configuration.Public256Key), "Public rsa key needed for documents processing");
+            if (string.IsNullOrEmpty(configuration.Private256Key)) throw new ArgumentNullException(nameof(configuration.Private256Key), "Private rsa key needed for documents processing");
+            if (string.IsNullOrEmpty(configuration.MindeeKey)) throw new ArgumentNullException(nameof(configuration.MindeeKey), "Mindee api key needed for documents processing");
         }
     }
 }

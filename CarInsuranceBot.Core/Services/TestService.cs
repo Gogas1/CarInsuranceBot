@@ -18,7 +18,7 @@ namespace CarInsuranceBot.Core.Services
 
         public async Task ToTestState(long userId)
         {
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.TestUserState, userId);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.TestUserState, userId, default);
         }
     }
 }

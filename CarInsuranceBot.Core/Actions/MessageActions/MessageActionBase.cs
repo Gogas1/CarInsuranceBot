@@ -4,62 +4,36 @@ using CarInsuranceBot.Core.Enums;
 using Telegram.Bot.Types;
 using Telegram.Bot;
 using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Abstractions;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions
 {
-    internal class MessageActionBase : ActionBase<Message>
+    internal abstract class MessageActionBase : BusyHandlingActionBase<Message>
     {
-        private readonly CancellationTokenSource _executionCancellationTokenSource;
-        protected readonly ITelegramBotClient _botClient;
-        protected readonly UserService _userService;
-
-        protected bool IsCancellationRequested
+        protected override TimeSpan Timeout => TimeSpan.FromSeconds(20);
+        
+        protected MessageActionBase(UserService userService, ITelegramBotClient botClient) : base(botClient, userService)
         {
-            get
+        }
+
+        public sealed override async Task Execute(UpdateWrapperBase<Message> update, CancellationToken cancellationToken)
+        {
+            if(update.GetUser() is User user)
             {
-                return _executionCancellationTokenSource.IsCancellationRequested;
+                await _botClient.SendChatAction(user.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
             }
+
+            await base.Execute(update, cancellationToken);
         }
 
-        public MessageActionBase(UserService userService, ITelegramBotClient botClient)
+        protected override async Task OnTimeoutAsync(Message update)
         {
-            _userService = userService;
-            _botClient = botClient;
-            _executionCancellationTokenSource = new CancellationTokenSource();
-        }
-
-        public override async Task Execute(Message update)
-        {
-            await ProcessReset(update);
-        }
-
-        protected virtual async Task ProcessReset(Message update)
-        {
-            if (update.From == null)
+            if(update.From == null)
             {
                 return;
             }
 
-            if (string.IsNullOrEmpty(update.Text))
-            {
-                return;
-            }
-
-            var parts = update.Text.Trim().Split(' ');
-
-            if (parts.Length < 1)
-            {
-                return;
-            }
-
-            if (parts[0] == "/reset")
-            {
-                await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id);
-                if(!string.IsNullOrEmpty(AnswersData.ResetMessage))
-                {
-                    await _botClient.SendMessage(update.From.Id, AnswersData.ResetMessage);
-                }
-            }
+            await _botClient.SendMessage(update.From.Id, AnswersData.TIMEOUT_ANSWER_TEXT);
         }
     }
 }

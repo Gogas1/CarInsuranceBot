@@ -30,34 +30,30 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
     internal class ProcessDocumentsDataAction : MessageActionBase
     {
         private readonly BotConfiguration _botConfig;
-        private readonly MemoryCache _cache;
         private readonly MindeeClient _mindeeClient;
         private readonly SecretCache _secretCache;
+        private readonly OpenAIService _openAiService;
+        private readonly DocumentsService _documentsService;
 
         public ProcessDocumentsDataAction(
             UserService userService,
             ITelegramBotClient botClient,
             IOptions<BotConfiguration> botOptions,
-            MemoryCache cache,
             MindeeClient mindeeClient,
-            SecretCache secretCache) : base(userService, botClient)
+            SecretCache secretCache,
+            OpenAIService openAiService,
+            DocumentsService documentsService) : base(userService, botClient)
         {
             _botConfig = botOptions.Value;
-            _cache = cache;
             _mindeeClient = mindeeClient;
             _secretCache = secretCache;
+            _openAiService = openAiService;
+            _documentsService = documentsService;
         }
 
-        public override async Task Execute(Message update)
+        protected override async Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
         {
             if (update.From == null)
-            {
-                return;
-            }
-
-            await base.Execute(update);
-
-            if(IsCancellationRequested)
             {
                 return;
             }
@@ -65,26 +61,37 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             var passportData = update.PassportData;
             if (passportData == null)
             {
-                await _botClient.SendMessage(update.From.Id, AnswersData.NoFileMessageFallbackText);
+                await _botClient.SendMessage(
+                    update.From.Id,
+                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENTS_PROVIDED_SETTINGS, cancellationToken),
+                    cancellationToken: cancellationToken);
                 return;
             }
 
-            var credentials = DecryptCredentials(passportData.Credentials);
+            var credentials = DecryptCredentials(passportData.Credentials, cancellationToken);
             if (credentials == null)
             {
-                await _botClient.SendMessage(update.From.Id, AnswersData.NoCredentialsMessageFallbackText);
+                await _botClient.SendMessage(
+                    update.From.Id,
+                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_CREDENTIALS_SETTINGS, cancellationToken),
+                    cancellationToken: cancellationToken);
                 return;
             }
 
             if (!ValidateNonce(update.From.Id, credentials.Nonce))
             {
-                await RequestPassportScopeAsync(update.From.Id, AnswersData.NoNonceMessageFallbackText);
+                await RequestPassportScopeAsync(
+                    update.From.Id,
+                    AnswersData.NO_NONCE_TEXT,
+                    cancellationToken);
                 return;
             }
 
-            await _botClient.SendMessage(update.From.Id, AnswersData.StartProcessingFallbackText);
-            await _botClient.SendChatAction(update.From.Id, Telegram.Bot.Types.Enums.ChatAction.Typing);
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.Processing, update.From.Id);
+            await _botClient.SendMessage(
+                update.From.Id,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.START_PROCESSING_SETTINGS, cancellationToken),
+                cancellationToken: cancellationToken);
+            await _botClient.SendChatAction(update.From.Id, Telegram.Bot.Types.Enums.ChatAction.Typing, cancellationToken: cancellationToken);
 
             IdDocument? idDocumentData = await ProcessDocumentAsync<IdDocument, InternationalIdV2>(
                 passportData.Data,
@@ -101,7 +108,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
                 },
                 d => d?.IsValid() ?? false,
                 "passport.jpg",
-                update.From.Id);
+                update.From.Id,
+                cancellationToken);
 
             DriverLicenseDocument? licenseDocumentData = await ProcessDocumentAsync<DriverLicenseDocument, DriverLicenseV1>(
                 passportData.Data,
@@ -119,24 +127,28 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
                 },
                 d => d?.IsValid() ?? false,
                 "license.jpg",
-                update.From.Id);
+                update.From.Id,
+                cancellationToken);
 
-            if(idDocumentData == null || licenseDocumentData == null)
+            if (idDocumentData == null || licenseDocumentData == null)
             {
-                await RequestPassportScopeAsync(update.From.Id, AnswersData.NoDocumentsFallbackText);
+                await RequestPassportScopeAsync(
+                    update.From.Id,
+                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
+                    cancellationToken);
                 return;
             }
 
-            await SendDocumentsProvidedAsync(update.From.Id, idDocumentData, licenseDocumentData);
+            await SendDocumentsProvidedAsync(update.From.Id, idDocumentData, licenseDocumentData, cancellationToken);
         }
 
-        private async Task SendDocumentsProvidedAsync(long userId, IdDocument idDoc, DriverLicenseDocument dlDoc)
+        private async Task SendDocumentsProvidedAsync(long userId, IdDocument idDoc, DriverLicenseDocument dlDoc, CancellationToken cancellationToken)
         {
             var idKey = await _secretCache.StoreAsync(idDoc, TimeSpan.FromMinutes(30));
             var dlKey = await _secretCache.StoreAsync(dlDoc, TimeSpan.FromMinutes(30));
 
             var message = string.Format(
-                AnswersData.DocumentsProvidedFallbackText,
+                AnswersData.DOCUMENTS_PROVIDED_TEXT,
                 idDoc.DocumentNumber,
                 idDoc.CountryCode,
                 idDoc.Surnames.First(),
@@ -155,38 +167,39 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 
             
 
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, userId);
             await _userService.SetUserInputStateAsync(userId, uis =>
             {
                 uis.CreateInsuranceFlow.IdCacheKey = idKey;
                 uis.CreateInsuranceFlow.DriverLicenseCacheKey = dlKey;
-            });
+            }, cancellationToken);
 
-            await _botClient.SendMessage(userId, message, replyMarkup: AnswersData.DataConfirmationKeyboard);
+            await _botClient.SendMessage(
+                userId,
+                message,
+                replyMarkup: AnswersData.DATA_CONFIRMATION_KEYBOARD,
+                cancellationToken: cancellationToken);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, userId, cancellationToken);
         }
 
-        private async Task RequestPassportScopeAsync(long userId, string text)
+        private async Task RequestPassportScopeAsync(long userId, string text, CancellationToken cancellationToken)
         {
-            var newNonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
-            var authReq = AnswersData.GetAuthorizationRequestParameters(_botClient, _botConfig, newNonce);
+            var newNonce = _documentsService.SetNonceForUser(userId);
 
-            _cache.Set($"nonce_{userId}", newNonce, TimeSpan.FromMinutes(10));
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, userId);
             await _botClient.SendMessage(
                 userId,
                 text,
-                replyMarkup: InlineKeyboardButton.WithUrl(
-                    AnswersData.ShareDocumentButtonText,
-                    string.Format(AnswersData.RedirectUrl, authReq.Query)));
+                replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce),
+                cancellationToken: cancellationToken);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, userId, cancellationToken);
         }
 
         private bool ValidateNonce(long userId, string nonce)
         {
-            var cached = _cache.Get($"nonce_{userId}") as string;
+            var cached = _documentsService.GetCachedNonce(userId);
             return cached == nonce;
         }
 
-        private Credentials? DecryptCredentials(EncryptedCredentials credentials)
+        private Credentials? DecryptCredentials(EncryptedCredentials credentials, CancellationToken cancellationToken)
         {
             var decrypter = new Decrypter();
             return decrypter.DecryptCredentials(credentials, RSAUtils.GetRSAFromString(_botConfig.Private256Key));
@@ -199,7 +212,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             Func<TMindeeDocument, TDocument?> mappingFunction,
             Func<TDocument?, bool> validationFunction,
             string fileName,
-            long userId) where TMindeeDocument : class, new() where TDocument : class, new()
+            long userId, 
+            CancellationToken cancellationToken) where TMindeeDocument : class, new() where TDocument : class, new()
         {
             if(fileCredentials == null)
             {
@@ -214,15 +228,17 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             await _botClient.DownloadAndDecryptPassportFileAsync(
                 element.FrontSide,
                 fileCredentials,
-                stream);
+                stream,
+                cancellationToken);
             stream.Position = 0;
 
             var response = await _mindeeClient.EnqueueAndParseAsync<TMindeeDocument>(
                 new LocalInputSource(stream, fileName));
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (response.ApiRequest.StatusCode != 200)
             {
-                await SendExtractionErrorAsync(type, fileCredentials.FileHash, userId);
+                await SendExtractionErrorAsync(type, fileCredentials.FileHash, userId, cancellationToken: cancellationToken);
                 return null;
             }
 
@@ -230,22 +246,24 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 
             if(!validationFunction(doc))
             {
-                await SendExtractionErrorAsync(type, fileCredentials.FileHash, userId);
+                await SendExtractionErrorAsync(type, fileCredentials.FileHash, userId, cancellationToken: cancellationToken);
                 return null;
             }
 
             return doc;
         }
 
-        private Task SendExtractionErrorAsync(EncryptedPassportElementType type, string fileHash, long userId)
+        private async Task SendExtractionErrorAsync(EncryptedPassportElementType type, string fileHash, long userId, CancellationToken cancellationToken)
         {
             var error = new PassportElementErrorFrontSide
             {
                 Type = type,
                 FileHash = fileHash,
-                Message = AnswersData.NoIdDataFallbackText,
+                Message = AnswersData.NO_DOCUMENTS_DATA_TEXT,
             };
-            return _botClient.SetPassportDataErrors(userId, [error]);
+            await _botClient.SetPassportDataErrors(userId, [error], cancellationToken);
         }
+
+        
     }
 }
