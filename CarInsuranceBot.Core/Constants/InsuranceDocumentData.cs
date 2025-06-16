@@ -1,5 +1,8 @@
 ﻿namespace CarInsuranceBot.Core.Constants
 {
+    /// <summary>
+    /// PDF file data
+    /// </summary>
     internal static class InsuranceDocumentData
     {
         public static string PolicyNumberText = "Policy Number:";

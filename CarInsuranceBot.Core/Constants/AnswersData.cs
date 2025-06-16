@@ -5,8 +5,14 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Constants
 {
+    /// <summary>
+    /// Data for the bot answers
+    /// </summary>
     internal static class AnswersData
     {
+        /// <summary>
+        /// GPT model request data model
+        /// </summary>
         internal record GPTTextSetting
         {
             public string Stage { get; set; } = string.Empty;
@@ -16,7 +22,10 @@ namespace CarInsuranceBot.Core.Constants
             public string FallbackText { get; set; } = string.Empty;
         }
 
-        // HelloMessageAction
+
+        #region HelloMessageAction
+                
+        //Fallback text for the welcoming message
         public static readonly string HELLO_MESSAGE_FALLBACK_TEXT = "Hello. I am a car insurance bot. I can assist you with car insurance purchases";
         public static readonly GPTTextSetting HELLO_MESSAGE_SETTINGS = new()
         {
@@ -27,17 +36,32 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = HELLO_MESSAGE_FALLBACK_TEXT,
         };
 
-        // ProcessReconsiderationAction
+        #endregion HelloMessageAction
+
+
+        #region ProcessReconsiderationAction
+
+        // Text for user reconsideration about ordering an insurance
         public static readonly string USER_RECONSIDERED_ANSWER_TEXT = "Got it. Returning to the start.";
 
-        // BusyHandlingAction
+        #endregion ProcessReconsiderationAction
+
+
+        #region BusyHandlingAction
+
+        // Text for notifying an user about other running task for them
         public static readonly string BOT_BUSY_FOR_USER_ANSWER_TEXT = "I am processing other task for you. Please, wait for completion of the last task.";
 
-        // DefaultHomeMessage
+        #endregion BusyHandlingAction
+
+
+        #region DefaultHomeMessage
+
+        // Home message GPT request settings data
         public static readonly string HOME_FALLBACK_TEXT = "Proceed with available actions";
         public static readonly string HOME_STAGE = "Basic \"Home\" state";
         public static readonly string HOME_STATE = "Get basic availalble operations";
-        public static readonly string HOME_ACTION = "User has interacted with bot, having no state or active workflow";
+        public static readonly string HOME_ACTION = "User has interacted with the bot, having no state or active workflow";
         public static readonly string HOME_ANSWER_REQ = "Write a message offering user to proceed with one of the available actions";
 
         public static readonly GPTTextSetting HOME_MESSAGE_SETTINGS = new()
@@ -52,10 +76,19 @@ namespace CarInsuranceBot.Core.Constants
         public static readonly string GET_INSURANCE_BUTTON_TEXT = "Get Insurance";
         public static readonly InlineKeyboardButton[] HOME_KEYBOARD = [new InlineKeyboardButton(GET_INSURANCE_BUTTON_TEXT, "get_insurance")];
 
-        //Cancellation shared
+        #endregion DefaultHomeMessage
+
+        #region Cancellation shared
+
+        // Timeout message
         public static readonly string TIMEOUT_ANSWER_TEXT = "Sorry, your request took too long. Please try again.";
 
-        //InitCreateInsuranceFlow
+        #endregion Cancellation shared
+
+
+        #region InitCreateInsuranceFlow
+
+        // Message fallback text for insurance ordering workflow start
         public static readonly string START_INSURANCE_WORKFLOW_FALLBACK_TEXT = "Starting getting an insurance for you. Please, provide a photo of your ID and driver license.";
         public static readonly GPTTextSetting START_INSURANCE_WORKFLOW_SETTINGS = new()
         {
@@ -66,13 +99,18 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = START_INSURANCE_WORKFLOW_FALLBACK_TEXT,
         };
 
-        //Authorization Shared
+        #endregion InitCreateInsuranceFlow
+
+
+        #region Authorization Shared
+
         public static readonly string AUTHORIZATION_DECLINE_BUTTON_TEXT = "I have reconsidered this";
         public static readonly string SHARE_DOCUMENTS_BUTTON_TEXT = "Share via Passport";
         public static readonly string REDIRECT_URL = "https://gogas1.github.io/CarInsuranceBot/redirect.html?{0}";
 
         private static AuthorizationRequestParameters GetAuthorizationRequestParameters(ITelegramBotClient botClient, BotConfiguration botConfig, string nonce)
         {
+            // Init and return telegram authorization parameters to request passport and driver licenze access
             return new AuthorizationRequestParameters(
                 botClient.BotId,
                 botConfig.Public256Key,
@@ -87,9 +125,13 @@ namespace CarInsuranceBot.Core.Constants
                 });
         }
 
+
         public static InlineKeyboardButton[][] GetAuthorizationKeyboard(ITelegramBotClient client, BotConfiguration botConfig, string nonce)
         {
+            // Get auth parameters
             var authReq = GetAuthorizationRequestParameters(client, botConfig, nonce);
+
+            //Construct inline keyboard
             InlineKeyboardButton[][] keyboard = [
                 [InlineKeyboardButton.WithUrl(
                     AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT,
@@ -99,7 +141,11 @@ namespace CarInsuranceBot.Core.Constants
             return keyboard;
         }
 
-        //ProcessDocumentsDataAction
+        #endregion Authorization Shared
+
+        #region ProcessDocumentsDataAction
+
+        // Start processing user data fallback text
         public static readonly string START_PROCESSING_FALLBACK_TEXT = "Your data has been received. We are processing it.";
         public static readonly GPTTextSetting START_PROCESSING_SETTINGS = new()
         {
@@ -110,6 +156,7 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = START_PROCESSING_FALLBACK_TEXT,
         };
 
+        // No documents provided fallback text
         public static readonly string NO_DOCUMENTS_PROVIDED_FALLBACK_TEXT = "You have not provided documents. Please try again";
         public static readonly GPTTextSetting NO_DOCUMENTS_PROVIDED_SETTINGS = new()
         {
@@ -120,6 +167,7 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = NO_DOCUMENTS_PROVIDED_FALLBACK_TEXT,
         };
 
+        // No credentials in the documents text
         public static readonly string NO_CREDENTIALS_FALLLBACK_TEXT = "Credentials from the passport data are missing. Please try again";
         public static readonly GPTTextSetting NO_CREDENTIALS_SETTINGS = new()
         {
@@ -130,10 +178,13 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = NO_CREDENTIALS_FALLLBACK_TEXT,
         };
 
+        // No nonce text
         public static readonly string NO_NONCE_TEXT = "Authorization data have been expired. Please resubmit your data again";
 
+        // No documents data text for telegram passport error text
         public static readonly string NO_DOCUMENTS_DATA_TEXT = "Cannot extract document data, try make photo again";
 
+        //No documents data message fallback text
         public static readonly string NO_DOCUMENT_DATA_FALLBACK_TEXT = "We couldn't extract data from some of the provided documents. Please try again.";
         public static readonly GPTTextSetting NO_DOCUMENT_DATA_SETTINGS = new()
         {
@@ -144,6 +195,7 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = NO_DOCUMENT_DATA_FALLBACK_TEXT,
         };
 
+        // Documents data confirmation message text
         public static readonly string DOCUMENTS_PROVIDED_TEXT = """
             Validate extracted documents data and confirm if it is correct.
             Passport:
@@ -163,18 +215,26 @@ namespace CarInsuranceBot.Core.Constants
             Expiry date - {12};
             """;
 
-        //Data confirmation shared
+        #endregion ProcessDocumentsDataAction
+
+        #region Data confirmation shared
+
+        //Data confirmation keyboard buttons content
         public static readonly string DATA_CONFIRMATION_BUTTON_TEXT = "Yes, I confirm";
         public static readonly string DATA_DECLINE_BUTTON_TEXT = "No, data is incorrect";
         public static readonly string DATA_CONFIRMATION_BUTTON_DATA = "yes";
         public static readonly string DATA_DECLINE_BUTTON_DATA = "no";
 
+        // Data confirmation keyboard
         public static readonly InlineKeyboardButton[] DATA_CONFIRMATION_KEYBOARD = [
                 new InlineKeyboardButton(DATA_CONFIRMATION_BUTTON_TEXT, DATA_CONFIRMATION_BUTTON_DATA),
                 new InlineKeyboardButton(DATA_DECLINE_BUTTON_TEXT, DATA_DECLINE_BUTTON_DATA)
                 ];
 
-        //Price agreement shared
+        #endregion Data confirmation shared        
+
+        #region Price agreement shared
+
         public static readonly string NO_STORED_DOCUMENTS_FALLLBACK_TEXT = "Your information is no longer stored. Resubmit it please.";
         public static readonly GPTTextSetting NO_STORED_DOCUMENTS_SETTINGS = new()
         {
@@ -225,7 +285,11 @@ namespace CarInsuranceBot.Core.Constants
                 new InlineKeyboardButton(PRICE_DECLINE_BUTTON_TEXT, PRICE_DECLINE_BUTTON_DATA)
                 ];
 
-        //ProcessDataConfirmationAction
+        #endregion Price agreement shared
+
+        #region ProcessDataConfirmationAction
+
+        // Data corectness declined and user need to resubmit documents message fallback text
         public static readonly string DATA_DECLINED_FALLBACK_TEXT = "Please resubmit your documents.";
         public static readonly GPTTextSetting DATA_DECLINED_SETTINGS = new()
         {
@@ -236,6 +300,7 @@ namespace CarInsuranceBot.Core.Constants
             FallbackText = DATA_DECLINED_FALLBACK_TEXT,
         };
 
+        // Data is correct, proceed to the price confirmation flow fallback text
         public static readonly string DATA_CONFIRMED_FALLBACK_TEXT = "Thanks. Insurance fixed price is 100 US dollars. Are you agreeing with this price and ready to proceed?";
         public static readonly GPTTextSetting DATA_CONFIRMED_SETTINGS = new()
         {
@@ -245,5 +310,7 @@ namespace CarInsuranceBot.Core.Constants
             AnswerReq = "Thank user. Offer insurance 100 US dollars fixed price and ask about agreement with such price",
             FallbackText = DATA_CONFIRMED_FALLBACK_TEXT,
         };
+
+        #endregion ProcessDataConfirmationAction
     }
 }

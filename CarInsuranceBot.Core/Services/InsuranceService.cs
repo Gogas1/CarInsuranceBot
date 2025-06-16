@@ -2,6 +2,9 @@
 
 namespace CarInsuranceBot.Core.Services
 {
+    /// <summary>
+    /// Service to get an insurance for user
+    /// </summary>
     internal class InsuranceService
     {
         private readonly DocumentsService _documentsService;
@@ -11,6 +14,12 @@ namespace CarInsuranceBot.Core.Services
             _documentsService = documentsService;
         }
 
+        /// <summary>
+        /// Simulates insurance processing and composing the data about if
+        /// </summary>
+        /// <param name="telegramUserId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>Composed insurance data</returns>
         public async Task<InsuranceDocumentModel?> CreateInsuranceForUser(long telegramUserId, CancellationToken cancellationToken)
         {
             var data = await _documentsService.GetDataForUserAsync(telegramUserId, cancellationToken);

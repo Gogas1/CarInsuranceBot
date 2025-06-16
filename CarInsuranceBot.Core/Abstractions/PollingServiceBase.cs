@@ -5,6 +5,10 @@ using Microsoft.Extensions.Logging;
 
 namespace CarInsuranceBot.Core.Abstractions
 {
+    /// <summary>
+    /// <see cref="BackgroundService"/> implementation for polling generic service
+    /// </summary>
+    /// <typeparam name="TReceiverSerivce">Concrete receiver type that implements <see cref="IReceiverService"/></typeparam>
     internal class PollingServiceBase<TReceiverSerivce> : BackgroundService where TReceiverSerivce : IReceiverService
     {
         private readonly IServiceProvider _serviceProvider;
@@ -18,10 +22,15 @@ namespace CarInsuranceBot.Core.Abstractions
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            await DoWork(stoppingToken);
+            await StartReceiving(stoppingToken);
         }
 
-        private async Task DoWork(CancellationToken stoppingToken)
+        /// <summary>
+        /// Starts receiving using <see cref="TReceiverSerivce"/>
+        /// </summary>
+        /// <param name="stoppingToken"></param>
+        /// <returns></returns>
+        private async Task StartReceiving(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {

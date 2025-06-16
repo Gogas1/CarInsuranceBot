@@ -7,7 +7,6 @@ using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceSecondConfirmation;
 using CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.Home;
 using CarInsuranceBot.Core.Actions.MessageActions.None;
-using CarInsuranceBot.Core.Actions.MessageActions.Test;
 using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Enums;
@@ -24,21 +23,25 @@ using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Extensions
 {
+    /// <summary>
+    /// <see cref="IServiceCollection"/> extenstions to setup Car Insurance Telegram Bot and its services
+    /// </summary>
     public static class ServiceCollectionSetupExtensions
     {
         /// <summary>
-        /// Registers Car Insurance Bot services
+        /// Registers Car Insurance Bot services, actions and polling service
         /// </summary>
-        /// <param name="services">IServiceCollection instance</param>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
         /// <param name="configuration">Bot configuration</param>
-        /// <returns></returns>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         public static IServiceCollection AddCarInsuranceTelegramBot(this IServiceCollection services, BotConfiguration configuration)
         {
             BotConfigValidator.Validate(configuration);
 
+            // Register all needed services
             services.AddBotOptions(configuration)
                 .AddSecretCache(configuration)
-                .AddOpenAiServices(configuration)
+                .AddOpenAiServices(configuration, "gpt-4.1-mini")
                 .AddApiServices(configuration)
                 .AddBotClient()
                 .AddServices()
@@ -49,16 +52,26 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
-        private static IServiceCollection AddOpenAiServices(this IServiceCollection services, BotConfiguration configuration)
+        /// <summary>
+        /// Registers OpenAI ChatClient
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <param name="configuration">Bot configuration</param>
+        /// <param name="model">Gpt model to use</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
+        private static IServiceCollection AddOpenAiServices(this IServiceCollection services, BotConfiguration configuration, string model)
         {
-            if (!string.IsNullOrEmpty(configuration.OpenAiKey))
-            {
-                services.AddSingleton<ChatClient>(new ChatClient("gpt-4.1-mini", configuration.OpenAiKey));
-            }
+            services.AddSingleton<ChatClient>(new ChatClient(model, configuration.OpenAiKey));
 
             return services;
         }
 
+        /// <summary>
+        /// Registers encrypted cache services
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <param name="configuration">Bot configuration</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddSecretCache(this IServiceCollection services, BotConfiguration configuration)
         {
             services.AddSingleton<IDataCacheBackend, MemoryCacheBackend>(_ => new MemoryCacheBackend());
@@ -68,6 +81,12 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers api services and configuration: Mindee, QuestPDF
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <param name="configuration">Bot configuration</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddApiServices(this IServiceCollection services, BotConfiguration configuration)
         {
             QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
@@ -76,6 +95,12 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers <see cref="BotConfiguration"/>
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <param name="configuration">Bot configuration</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddBotOptions(this IServiceCollection services, BotConfiguration configuration)
         {
             services
@@ -93,8 +118,14 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers and configures bot client
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddBotClient(this IServiceCollection services)
         {
+            //Registers telegram bot client with http client for it
             services.AddHttpClient("telegram_bot_client")
                 .RemoveAllLoggers()
                 .AddTypedClient<ITelegramBotClient>((httpClient, serviceProvider) =>
@@ -109,6 +140,11 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers telegram bot core services
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddServices(this IServiceCollection services)
         {
             services.AddSingleton<MemoryCache>(new MemoryCache(new MemoryCacheOptions()));
@@ -124,11 +160,15 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers bot actions
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddActions(this IServiceCollection services)
         {
             services.AddTransient<HelloMessageAction>();
             services.AddTransient<DefaultHomeMessage>();
-            services.AddTransient<TestAction>();
 
             services.AddTransient<ProcessReconsiderationAction>();
             services.AddTransient<InitCreateInsuranceFlow>();
@@ -140,6 +180,11 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Registers bot action factories
+        /// </summary>
+        /// <param name="services"><see cref="IServiceCollection"/> instance</param>
+        /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddActionFactories(this IServiceCollection services)
         {
             services.AddScoped<ActionsFactory<Message>>(serviceProvider =>
@@ -150,8 +195,7 @@ namespace CarInsuranceBot.Core.Extensions
                 {
                     { UserState.None, () => scopeFactory.GetAction<Message, HelloMessageAction>() },
                     { UserState.Home, () => scopeFactory.GetAction<Message, DefaultHomeMessage>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() },
-                    { UserState.TestUserState, () => scopeFactory.GetAction<Message, TestAction>() }
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() }
                 };
 
                 return new ActionsFactory<Message>(actions);
@@ -176,6 +220,13 @@ namespace CarInsuranceBot.Core.Extensions
             return services;
         }
 
+        /// <summary>
+        /// Helper method to abstract retrieving <see cref="ActionBase{TUpdateType}"/> from <see cref="IServiceScopeFactory"/>
+        /// </summary>
+        /// <typeparam name="TUpdateType">Target action update type</typeparam>
+        /// <typeparam name="TImplementation">Target <see cref="ActionBase{TUpdateType}"/> implementation type</typeparam>
+        /// <param name="scopeFactory"><see cref="IServiceScopeFactory"/> instance</param>
+        /// <returns>Target <see cref="ActionBase{TUpdateType}"/> implementation</returns>
         private static ActionBase<TUpdateType> GetAction<TUpdateType, TImplementation>(this IServiceScopeFactory scopeFactory) where TImplementation : ActionBase<TUpdateType>
         {
             return scopeFactory.CreateScope().ServiceProvider.GetRequiredService<TImplementation>();

@@ -1,5 +1,8 @@
 ﻿namespace CarInsuranceBot.Core.Models.Documents
 {
+    /// <summary>
+    /// Driver license data model
+    /// </summary>
     public class DriverLicenseDocument
     {
         public string CountryCode { get; set; } = string.Empty;

@@ -2,6 +2,9 @@
 
 namespace CarInsuranceBot.Core.Models
 {
+    /// <summary>
+    /// User input state model
+    /// </summary>
     public class UserInputState
     {
         public Guid Id { get; set; }

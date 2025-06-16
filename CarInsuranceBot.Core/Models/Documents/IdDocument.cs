@@ -1,5 +1,8 @@
 ﻿namespace CarInsuranceBot.Core.Models.Documents
 {
+    /// <summary>
+    /// Id document data model
+    /// </summary>
     public class IdDocument
     {
         public string DocumentNumber { get; set; } = string.Empty;

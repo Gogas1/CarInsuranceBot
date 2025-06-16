@@ -6,6 +6,9 @@ using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions.Home
 {
+    /// <summary>
+    /// <see cref="MessageActionBase"/> implementation to handle home state of the bot.
+    /// </summary>
     internal class DefaultHomeMessage : MessageActionBase
     {
         private readonly OpenAIService _openAiService;
@@ -22,11 +25,14 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Home
                 return;
             }
 
+            // Send home message and available actions keyboard
             await _botClient.SendMessage(
                 update.Chat,
                 await _openAiService.GetDiversifiedAnswer(AnswersData.HOME_MESSAGE_SETTINGS, cancellationToken),
                 replyMarkup: AnswersData.HOME_KEYBOARD,
                 cancellationToken: cancellationToken);
+
+            // Change user state
             await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id, cancellationToken);
         }
     }

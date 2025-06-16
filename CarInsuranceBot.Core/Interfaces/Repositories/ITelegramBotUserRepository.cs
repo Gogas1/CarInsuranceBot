@@ -2,6 +2,9 @@
 
 namespace CarInsuranceBot.Core.Interfaces.Repositories
 {
+    /// <summary>
+    /// Users repository interface
+    /// </summary>
     public interface ITelegramBotUserRepository : ICrudRepository<MyUser, Guid>
     {
         public Task<MyUser?> GetUserByTelegramIdAsync(long telegramId, CancellationToken cancellationToken);

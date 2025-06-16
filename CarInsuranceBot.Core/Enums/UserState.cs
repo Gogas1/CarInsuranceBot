@@ -1,5 +1,8 @@
 ﻿namespace CarInsuranceBot.Core.Enums
 {
+    /// <summary>
+    /// User states enumeration
+    /// </summary>
     public enum UserState
     {
         None,
@@ -9,8 +12,6 @@
         DocumentsDataConfirmationAwait,
 
         PriceConfirmationAwait,
-        PriceSecondConfirmationAwait,
-
-        TestUserState
+        PriceSecondConfirmationAwait
     }
 }

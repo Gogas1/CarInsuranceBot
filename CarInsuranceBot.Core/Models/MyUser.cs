@@ -2,6 +2,9 @@
 
 namespace CarInsuranceBot.Core.Models
 {
+    /// <summary>
+    /// User model
+    /// </summary>
     public class MyUser
     {
         public Guid Id { get; set; }

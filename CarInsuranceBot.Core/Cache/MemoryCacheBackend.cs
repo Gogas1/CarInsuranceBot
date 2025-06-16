@@ -2,6 +2,9 @@
 
 namespace CarInsuranceBot.Core.Cache
 {
+    /// <summary>
+    /// <see cref="MemoryCache"/> wrapper
+    /// </summary>
     internal class MemoryCacheBackend : IDataCacheBackend, IDisposable
     {
         private readonly MemoryCache _cache;

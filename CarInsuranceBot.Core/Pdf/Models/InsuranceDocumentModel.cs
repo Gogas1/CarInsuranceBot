@@ -1,5 +1,8 @@
 ﻿namespace CarInsuranceBot.Pdf
 {
+    /// <summary>
+    /// Insurance PDF documents model
+    /// </summary>
     internal class InsuranceDocumentModel
     {
         public string PolicyNumber { get; set; } = string.Empty;

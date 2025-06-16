@@ -3,10 +3,16 @@ using static CarInsuranceBot.Core.Constants.AnswersData;
 
 namespace CarInsuranceBot.Core.Services
 {
+    /// <summary>
+    /// Service to work with OpenAI API
+    /// </summary>
     internal class OpenAIService
     {
         private readonly ChatClient _chatClient;
 
+        /// <summary>
+        /// GPT system message content for a diversification task
+        /// </summary>
         private readonly string DIVERSIFY_SYSTEM_MESSAGE = @"You are an assistant embedded in a Telegram insurance‐bot. 
             At every turn:
             - You know the current Stage (e.g. “Processing user documents stage”) and State (e.g. “Documents sent”).
@@ -25,11 +31,27 @@ namespace CarInsuranceBot.Core.Services
             _chatClient = chatClient;
         }
 
+        /// <summary>
+        /// Produces a text based on the passed <see cref="GPTTextSetting"/> settings
+        /// </summary>
+        /// <param name="textSetting">Settings</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>Generated text</returns>
         public Task<string> GetDiversifiedAnswer(GPTTextSetting textSetting, CancellationToken cancellationToken)
         {
             return GetDiversifiedAnswer(textSetting.Stage, textSetting.State, textSetting.Action, textSetting.AnswerReq, textSetting.FallbackText, cancellationToken);
         }
 
+        /// <summary>
+        /// Produces a text based on the passed parameters
+        /// </summary>
+        /// <param name="stage"></param>
+        /// <param name="state"></param>
+        /// <param name="action"></param>
+        /// <param name="answerReq"></param>
+        /// <param name="fallbackText"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public async Task<string> GetDiversifiedAnswer(string stage, string state, string action, string answerReq, string fallbackText, CancellationToken cancellationToken)
         {
             var system = ChatMessage.CreateSystemMessage(DIVERSIFY_SYSTEM_MESSAGE);

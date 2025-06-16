@@ -7,6 +7,9 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions.None
 {
+    /// <summary>
+    /// <see cref="MessageActionBase"/> implementation to process new users
+    /// </summary>
     internal class HelloMessageAction : MessageActionBase
     {
 
@@ -24,12 +27,14 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.None
                 return;
             }
 
-            var inlineKeyboard = new InlineKeyboardButton("Get Insurance", "get_insurance");
+            // Send hello message and available actions keyboard
             await _botClient.SendMessage(
                 update.Chat,
                 await _openAiService.GetDiversifiedAnswer(AnswersData.HELLO_MESSAGE_SETTINGS, cancellationToken),
-                replyMarkup: inlineKeyboard,
+                replyMarkup: AnswersData.HOME_KEYBOARD,
                 cancellationToken: cancellationToken);
+
+            // Change user state
             await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id, cancellationToken);
         }
     }

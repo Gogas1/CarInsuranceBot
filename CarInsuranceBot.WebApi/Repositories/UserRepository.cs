@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace CarInsuranceBot.WebApi.Repositories
 {
+    /// <summary>
+    /// <see cref="IUserRepository"/> implementation
+    /// </summary>
     public class UserRepository : IUserRepository
     {
         private readonly CarInsuranceDbContext _context;

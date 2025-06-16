@@ -3,10 +3,18 @@ using System.Text.Json;
 
 namespace CarInsuranceBot.Core.Cache
 {
+    /// <summary>
+    /// Service to encrypt data
+    /// </summary>
     internal class DataEncryptionService
     {
         private readonly byte[] _key;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="key">32 bytes long key</param>
+        /// <exception cref="ArgumentException"></exception>
         public DataEncryptionService(byte[] key)
         {
             if (key == null || key.Length != 32)
@@ -17,8 +25,15 @@ namespace CarInsuranceBot.Core.Cache
             _key = key;
         }
 
+        /// <summary>
+        /// Encrypts provided object
+        /// </summary>
+        /// <typeparam name="T">Payload type</typeparam>
+        /// <param name="payload">Payload</param>
+        /// <returns>Encrypted json representation as Base64 string</returns>
         public string Encrypt<T>(T payload)
         {
+            // Serialize payload
             var plaintext = JsonSerializer.SerializeToUtf8Bytes(payload);
 
             var nonce = RandomNumberGenerator.GetBytes(12);
@@ -28,6 +43,7 @@ namespace CarInsuranceBot.Core.Cache
             using var aesGcm = new AesGcm(_key, tagSizeInBytes: 16);
             aesGcm.Encrypt(nonce, plaintext, cipher, tag);
 
+            // Combine all the data into byte array
             var combined = new byte[nonce.Length + tag.Length + cipher.Length];
             Buffer.BlockCopy(nonce, 0, combined, 0, nonce.Length);
             Buffer.BlockCopy(tag, 0, combined, nonce.Length, tag.Length);

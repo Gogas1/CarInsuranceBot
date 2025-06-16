@@ -2,7 +2,13 @@
 {
     public class BotConfiguration
     {
+        /// <summary>
+        /// Bot access token
+        /// </summary>
         public required string Token { get; set; } = string.Empty;
+        /// <summary>
+        /// Administrators telegram ids for admin features access
+        /// </summary>
         public List<long> AdminIds { get; set; } = new();
 
         /// <summary>
@@ -11,7 +17,13 @@
         public required string SecretKey { get; set; } = string.Empty;
         public required string Public256Key { get; set; } = string.Empty;
         public required string Private256Key { get; set; } = string.Empty;
+        /// <summary>
+        /// Mindee API key
+        /// </summary>
         public required string MindeeKey { get; set; } = string.Empty;
+        /// <summary>
+        /// OpenAI API key
+        /// </summary>
         public string OpenAiKey { get; set; } = string.Empty;
 
         public BotConfiguration()
@@ -25,7 +37,7 @@
             string public256Key,
             string private256Key,
             string mindeeKey,
-            string openAiKey = "")
+            string openAiKey)
         {
             Token = token;
             SecretKey = secretKey;
@@ -42,7 +54,7 @@
             string public256Key,
             string private256Key,
             string mindeeKey,
-            string openAiKey = "")
+            string openAiKey)
             : this(
                   token,
                   secretKey,

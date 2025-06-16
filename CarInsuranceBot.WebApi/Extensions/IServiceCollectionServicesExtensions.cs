@@ -12,6 +12,7 @@ namespace CarInsuranceBot.WebApi.Extensions
     {
         public static IServiceCollection AddServices(this IServiceCollection services)
         {
+            //Register telegram bot user service implementation
             services.AddScoped<ITelegramBotUserRepository, UserRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
 

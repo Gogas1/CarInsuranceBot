@@ -10,6 +10,9 @@ using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Services
 {
+    /// <summary>
+    /// Telegram bot <see cref="IUpdateHandler"/> implementation
+    /// </summary>
     internal class UpdateService : IUpdateHandler
     {
         private readonly ILogger<UpdateService> _logger;
@@ -29,10 +32,18 @@ namespace CarInsuranceBot.Core.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Update handling method
+        /// </summary>
+        /// <param name="botClient"></param>
+        /// <param name="update"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            // Resolve target update type and run a task to not block update handling
             _ = Task.Run(async () =>
             {
                 switch (update)
@@ -59,14 +70,17 @@ namespace CarInsuranceBot.Core.Services
                 return;
             }
 
+            // Create service provider scope
             using (var scope = _scopeFactory.CreateScope())
             {
                 var sp = scope.ServiceProvider;
                 var userService = sp.GetRequiredService<UserService>();
                 var messageActionFactory = sp.GetRequiredService<ActionsFactory<Message>>();
 
+                // Get user state
                 UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id, cancellationToken);
 
+                // Resolve target action based on current state
                 ActionBase<Message>? targetStateHandler = messageActionFactory.GetActionForState(userState);
 
                 if (targetStateHandler == null)
@@ -74,6 +88,7 @@ namespace CarInsuranceBot.Core.Services
                     return;
                 }
 
+                //Execute action
                 await targetStateHandler.Execute(new MessageUpdateWrapper(msg), cancellationToken);
 
             }
@@ -82,14 +97,17 @@ namespace CarInsuranceBot.Core.Services
 
         private async Task OnCallbackQuery(CallbackQuery callback, CancellationToken cancellationToken)
         {
+            // Create service provider scope
             using (var scope = _scopeFactory.CreateScope())
             {
                 var sp = scope.ServiceProvider;
                 var userService = sp.GetRequiredService<UserService>();
                 var callbackQueryActionFactory = sp.GetRequiredService<ActionsFactory<CallbackQuery>>();
 
+                // Get user state
                 UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id, cancellationToken);
 
+                // Resolve target action based on current state
                 ActionBase<CallbackQuery>? targetStateHandler = callbackQueryActionFactory.GetActionForState(userState);
 
                 if (targetStateHandler == null)
@@ -97,6 +115,7 @@ namespace CarInsuranceBot.Core.Services
                     return;
                 }
 
+                //Execute action
                 await targetStateHandler.Execute(new CallbackQueryUpdateWrapper(callback), cancellationToken);
 
             }
@@ -104,6 +123,7 @@ namespace CarInsuranceBot.Core.Services
 
         private Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
         {
+            //Skip unknown update
             return Task.CompletedTask;
         }
     }

@@ -7,6 +7,9 @@ using Telegram.Bot;
 
 namespace CarInsuranceBot.Core.Services
 {
+    /// <summary>
+    /// Service to handle user documents workflow
+    /// </summary>
     internal class DocumentsService
     {
         private readonly SecretCache _secretCache;
@@ -22,6 +25,11 @@ namespace CarInsuranceBot.Core.Services
             _cache = cache;
         }
 
+        /// <summary>
+        ///Creates and saves nonce for user         
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         internal string SetNonceForUser(long userId)
         {
             var nonce = Convert.ToBase64String(RandomNumberGenerator.GetBytes(12));
@@ -30,6 +38,11 @@ namespace CarInsuranceBot.Core.Services
             return nonce;
         }
 
+        /// <summary>
+        /// Retreives nonce for user
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <returns></returns>
         internal string GetCachedNonce(long userId)
         {
             var nonceObject = _cache.Get($"nonce_{userId}");
@@ -41,6 +54,12 @@ namespace CarInsuranceBot.Core.Services
             return string.Empty;
         }
 
+        /// <summary>
+        /// Retreives cached user documents data
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         internal async Task<UserDocuments?> GetDataForUserAsync(long userId, CancellationToken cancellationToken)
         {
             var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
@@ -60,6 +79,12 @@ namespace CarInsuranceBot.Core.Services
             return new UserDocuments(idData, licenseData);
         }
 
+        /// <summary>
+        /// Deletes cached data of the user
+        /// </summary>
+        /// <param name="userId"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         internal async Task DeleteUserDataAsync(long userId, CancellationToken cancellationToken)
         {
             var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
@@ -70,21 +95,6 @@ namespace CarInsuranceBot.Core.Services
 
             await _secretCache.DeleteAsync(userInputState.CreateInsuranceFlow.IdCacheKey);
             await _secretCache.DeleteAsync(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey);
-        }
-
-        public async Task SetDocumentsForUser(long userId, IdDocument idDocument, DriverLicenseDocument licenseDocument, CancellationToken cancellationToken)
-        {
-            var idKey = await _secretCache.StoreAsync(idDocument, TimeSpan.FromMinutes(30));
-            var dlKey = await _secretCache.StoreAsync(licenseDocument, TimeSpan.FromMinutes(30));
-
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, userId, cancellationToken);
-            await _userService.SetUserInputStateAsync(userId, uis =>
-            {
-                uis.CreateInsuranceFlow.IdCacheKey = idKey;
-                uis.CreateInsuranceFlow.DriverLicenseCacheKey = dlKey;
-            }, cancellationToken);
-
-            await _botClient.SendMessage(userId, "Do you confirm data?", replyMarkup: AnswersData.DATA_CONFIRMATION_KEYBOARD);
         }
 
         internal class UserDocuments
