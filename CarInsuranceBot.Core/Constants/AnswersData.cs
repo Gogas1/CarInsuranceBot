@@ -163,7 +163,7 @@ namespace CarInsuranceBot.Core.Constants
             Stage = "Documents processing",
             State = "application failed to receive user documents",
             Action = "User failed to send documents using application authorization workflow system",
-            AnswerReq = "Write we have not received data from the user, so they need to try again",
+            AnswerReq = "Write we have not received data from the user, so they need to try again. Prompt to use the authorization system vie the message keyboard buttons in case they weren't used in first place, as they is the only option",
             FallbackText = NO_DOCUMENTS_PROVIDED_FALLBACK_TEXT,
         };
 
@@ -220,6 +220,8 @@ namespace CarInsuranceBot.Core.Constants
         #region Data confirmation shared
 
         //Data confirmation keyboard buttons content
+        public static readonly string NO_CONCRETE_ANSWER_FALLBACK_TEXT = "You did not provide concrete answer. For more direct workflow, please use message keyboard buttons";
+
         public static readonly string DATA_CONFIRMATION_BUTTON_TEXT = "Yes, I confirm";
         public static readonly string DATA_DECLINE_BUTTON_TEXT = "No, data is incorrect";
         public static readonly string DATA_CONFIRMATION_BUTTON_DATA = "yes";
@@ -234,6 +236,8 @@ namespace CarInsuranceBot.Core.Constants
         #endregion Data confirmation shared        
 
         #region Price agreement shared
+
+        public static readonly string MUST_USE_KEYBOARD_TEXT = "You need to use message keyboard to agree or disagree with price.";
 
         public static readonly string NO_STORED_DOCUMENTS_FALLLBACK_TEXT = "Your information is no longer stored. Resubmit it please.";
         public static readonly GPTTextSetting NO_STORED_DOCUMENTS_SETTINGS = new()

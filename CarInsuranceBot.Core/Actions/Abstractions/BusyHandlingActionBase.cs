@@ -1,6 +1,7 @@
 ﻿using CarInsuranceBot.Core.Abstractions;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Services;
+using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 

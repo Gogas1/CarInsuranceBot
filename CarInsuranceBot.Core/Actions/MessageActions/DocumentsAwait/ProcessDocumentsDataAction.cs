@@ -1,6 +1,8 @@
 ﻿using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Enums;
+using CarInsuranceBot.Core.Extensions;
 using CarInsuranceBot.Core.Models.Documents;
 using CarInsuranceBot.Core.Services;
 using CarInsuranceBot.Core.Utils;
@@ -31,6 +33,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
         private readonly OpenAIService _openAiService;
         private readonly DocumentsService _documentsService;
 
+        protected override TimeSpan Timeout => TimeSpan.FromSeconds(20);
+
         public ProcessDocumentsDataAction(
             UserService userService,
             ITelegramBotClient botClient,
@@ -50,6 +54,60 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
         protected override async Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
         {
             if (update.From == null)
+            {
+                return;
+            }
+
+            OpenAIService.SelectItem? selectedOption = null;
+            // Init default options
+            OpenAIService.SelectItem defautOption = new OpenAIService.SelectItem(
+                -1,
+                "Reconsideration",
+                async _ => await OnProcessDocumentsWay(update, cancellationToken));
+
+            //Init options list
+            OpenAIService.SelectItem[] options = [
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.AUTHORIZATION_DECLINE_BUTTON_TEXT,
+                    async _ => await OnReconsideration(update, cancellationToken))
+                ];
+
+            // If user wrote something
+            if (update.Text != null)
+            {
+                // Get selected option by GPT and execute
+                selectedOption = await _openAiService.GetSelectionByTextAsync(options, defautOption, update.Text.Truncate(100), cancellationToken);
+                selectedOption.OnSelection();
+
+                return;
+            }
+
+            // Otherwise default option
+            defautOption.OnSelection();
+        }
+
+        private async Task OnReconsideration(Message update, CancellationToken cancellationToken)
+        {
+            if (update.From == null)
+            {
+                return;
+            }
+
+            //Send message about reconsideration with home keyboard markup
+            await _botClient.SendMessage(
+                update.Chat,
+                AnswersData.USER_RECONSIDERED_ANSWER_TEXT,
+                replyMarkup: AnswersData.HOME_KEYBOARD,
+                cancellationToken: cancellationToken);
+
+            //Change user state to UserState.Home
+            await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id, cancellationToken: cancellationToken);
+        }
+
+        private async Task OnProcessDocumentsWay(Message update, CancellationToken cancellationToken)
+        {
+            if(update.From == null)
             {
                 return;
             }

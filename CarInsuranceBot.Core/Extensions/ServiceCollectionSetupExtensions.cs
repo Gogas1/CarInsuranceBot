@@ -5,6 +5,7 @@ using CarInsuranceBot.Core.Actions.CallbackQueryActions.Home;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceSecondConfirmation;
 using CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait;
+using CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.Home;
 using CarInsuranceBot.Core.Actions.MessageActions.None;
 using CarInsuranceBot.Core.Cache;
@@ -13,11 +14,13 @@ using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Services;
 using CarInsuranceBot.Core.States.Abstractions;
 using CarInsuranceBot.Core.Validation;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Mindee;
-using OpenAI.Chat;
+using OpenAI;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
@@ -61,7 +64,9 @@ namespace CarInsuranceBot.Core.Extensions
         /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddOpenAiServices(this IServiceCollection services, BotConfiguration configuration, string model)
         {
-            services.AddSingleton<ChatClient>(new ChatClient(model, configuration.OpenAiKey));
+            services.AddSingleton<IChatClient>(new ChatClientBuilder(new OpenAIClient(configuration.OpenAiKey).GetChatClient(model).AsIChatClient())
+                .UseFunctionInvocation()
+                .Build());
 
             return services;
         }
@@ -169,10 +174,11 @@ namespace CarInsuranceBot.Core.Extensions
         {
             services.AddTransient<HelloMessageAction>();
             services.AddTransient<DefaultHomeMessage>();
+            services.AddTransient<ProcessDocumentsDataAction>();
+            services.AddTransient<ProcessDataConfirmationMessageAction>();
 
             services.AddTransient<ProcessReconsiderationAction>();
             services.AddTransient<InitCreateInsuranceFlow>();
-            services.AddTransient<ProcessDocumentsDataAction>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();
             services.AddTransient<ProcessSecondPriceConfirmationCallbackAction>();
@@ -195,7 +201,8 @@ namespace CarInsuranceBot.Core.Extensions
                 {
                     { UserState.None, () => scopeFactory.GetAction<Message, HelloMessageAction>() },
                     { UserState.Home, () => scopeFactory.GetAction<Message, DefaultHomeMessage>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() }
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() },
+                    { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessDataConfirmationMessageAction>() }
                 };
 
                 return new ActionsFactory<Message>(actions);

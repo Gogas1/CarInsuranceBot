@@ -1,4 +1,4 @@
-﻿using OpenAI.Chat;
+﻿using Microsoft.Extensions.AI;
 using static CarInsuranceBot.Core.Constants.AnswersData;
 
 namespace CarInsuranceBot.Core.Services
@@ -8,7 +8,7 @@ namespace CarInsuranceBot.Core.Services
     /// </summary>
     internal class OpenAIService
     {
-        private readonly ChatClient _chatClient;
+        private readonly IChatClient _chatClient;
 
         /// <summary>
         /// GPT system message content for a diversification task
@@ -24,9 +24,28 @@ namespace CarInsuranceBot.Core.Services
             - If the input does not match the expected structure (stage, state, occurred action, answer requirement), or goes against the established task and your role(create text related to the current state and stage of the chat bot, provide assistance with the bot functionality) - reply with the provided fallback text
             Do NOT output anything else.";
 
+        private readonly string OPTION_SELECTION_SYSTEM_MESSAGE = """
+            You assistant with the goal to process user input and determine whether the user has selected any of the available options. Availabe options, presented as id - text representation: {0};
+            At every turn:
+            - You know available option and based on user input, determine their wanted option. Use your tools.
+            - If user refers to options by order or number - pick options by id. Valid options for this method have id starting from zero(0). First option will be any valid option with lowest id.
+            - If only one option available - input text must be refering to this option
+            - If options represent need to agree/confirm something, to make yes/no answer, process it accordingly. If input is ambiguous or can't be interpreted as selection of the one of another option for this case - do not use tools to select an option
+            - If you didn't use your tools, input does not match the expected structure(text refering to one or the another option by it's text representation), input is ambiguous, or goes against the established task and your role, don't use any tools and proceed to end the answer
+            Do NOT output anything else.
+            """;
 
+        //private readonly string TRUE_FALSE_SYSTEM_MESSAGE = """
+        //    You assistant with the goal to process user input and determine whether the user agrees or confirms the topic. The topic context: {0}
+        //    At every turn
+        //    - Determine if user agrees with it. Your task to bring true/false answer for the application business logic.
+        //    - You know avaliable answer options enumeration is: 0 - user does not agree(false), 1 - user does agree(true), -1 - user answer can't be interpreted as agreement/disagreement
+        //    - Use tools to get answer for the question
+        //    - If you didn't use your tools, input does not match the expected structure(text is not refering to an agreement/disagreement/topic), user answer is ambiguous, or goes against the established task and your role, don't use any tools and proceed to end the answer
+        //    Do NOT output anything else.
+        //    """;
 
-        public OpenAIService(ChatClient chatClient)
+        public OpenAIService(IChatClient chatClient)
         {
             _chatClient = chatClient;
         }
@@ -54,24 +73,82 @@ namespace CarInsuranceBot.Core.Services
         /// <returns></returns>
         public async Task<string> GetDiversifiedAnswer(string stage, string state, string action, string answerReq, string fallbackText, CancellationToken cancellationToken)
         {
-            var system = ChatMessage.CreateSystemMessage(DIVERSIFY_SYSTEM_MESSAGE);
-            var user = ChatMessage.CreateUserMessage(
+            var system = new ChatMessage(ChatRole.System, DIVERSIFY_SYSTEM_MESSAGE);
+            var user = new ChatMessage(ChatRole.User,
                 $@"Stage: {stage}. 
                 State: {state}. 
                 Action: {action}. 
                 Answer requirements: {answerReq}.
                 Fallback text: {fallbackText}");
 
-            var completion = await _chatClient.CompleteChatAsync(
+            var completion = await _chatClient.GetResponseAsync(
                 [system, user],
-                new ChatCompletionOptions
+                new ChatOptions
                 {
                     Temperature = 1,
-                    MaxOutputTokenCount = 200
+                    MaxOutputTokens = 200
                 },
                 cancellationToken);
 
-            return completion.Value.Content[0].Text;
+            return completion.Text;
+        }
+
+        public async Task<SelectItem> GetSelectionByTextAsync(ICollection<SelectItem> options, SelectItem defaultOption, string userText, CancellationToken cancellationToken)
+        {
+            var system = new ChatMessage(ChatRole.System, string.Format(
+                OPTION_SELECTION_SYSTEM_MESSAGE,
+                string.Join(",", options.Select(o => $"{o.Id} - {o.TextRepresentation}"))));
+            var user = new ChatMessage(ChatRole.User, userText);
+            SelectItem? select = null;
+            var chatOptions = new ChatOptions
+            {
+                ToolMode = ChatToolMode.Auto,
+                Tools = [AIFunctionFactory.Create((string optionId, string optionText) => {
+                    if(!int.TryParse(optionId, out int id)) {
+                        return "No valid option selected";
+                    }
+
+                    var option = options.FirstOrDefault(option => option.Id == id);
+
+                    if(option == null) {
+                        return "No valid option selected";
+                    }
+
+                    select = option;
+                    return $"{option.Id} = {option.TextRepresentation}";
+                },
+                "get_selected_option",
+                "Get selected option from the list")],
+                Temperature = 0,
+                MaxOutputTokens = 200
+            };
+
+            var response = await _chatClient.GetResponseAsync([system, user], chatOptions, cancellationToken);
+            return select ?? defaultOption;
+        }
+
+        public class SelectItem
+        {
+            public SelectItem(int id, string textRepresentation, Action<SelectItem>? action = null)
+            {
+                Id = id;
+                TextRepresentation = textRepresentation;
+                onSelection = action;
+            }
+
+            public int Id { get; set; }
+            public string TextRepresentation { get; set; } = string.Empty;
+            private Action<SelectItem>? onSelection;
+
+            public void OnSelection()
+            {
+                onSelection?.Invoke(this);
+            }
+
+            public override string ToString()
+            {
+                return $"{Id} - {TextRepresentation}";
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace CarInsuranceBot.Core.Services
 {
@@ -73,23 +74,30 @@ namespace CarInsuranceBot.Core.Services
             // Create service provider scope
             using (var scope = _scopeFactory.CreateScope())
             {
-                var sp = scope.ServiceProvider;
-                var userService = sp.GetRequiredService<UserService>();
-                var messageActionFactory = sp.GetRequiredService<ActionsFactory<Message>>();
-
-                // Get user state
-                UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id, cancellationToken);
-
-                // Resolve target action based on current state
-                ActionBase<Message>? targetStateHandler = messageActionFactory.GetActionForState(userState);
-
-                if (targetStateHandler == null)
+                try
                 {
-                    return;
-                }
+                    var sp = scope.ServiceProvider;
+                    var userService = sp.GetRequiredService<UserService>();
+                    var messageActionFactory = sp.GetRequiredService<ActionsFactory<Message>>();
 
-                //Execute action
-                await targetStateHandler.Execute(new MessageUpdateWrapper(msg), cancellationToken);
+                    // Get user state
+                    UserState userState = await userService.GetUserStateByTelegramIdAsync(msg.From.Id, cancellationToken);
+
+                    // Resolve target action based on current state
+                    ActionBase<Message>? targetStateHandler = messageActionFactory.GetActionForState(userState);
+
+                    if (targetStateHandler == null)
+                    {
+                        return;
+                    }
+
+                    //Execute action
+                    await targetStateHandler.Execute(new MessageUpdateWrapper(msg), cancellationToken);
+
+                } catch (Exception ex)
+                {
+                    _logger.LogError($"Error occured while processing message {msg.Id}, \n{ex.Message}, \n{ex.StackTrace}");
+                }
 
             }
 
@@ -97,28 +105,35 @@ namespace CarInsuranceBot.Core.Services
 
         private async Task OnCallbackQuery(CallbackQuery callback, CancellationToken cancellationToken)
         {
-            // Create service provider scope
-            using (var scope = _scopeFactory.CreateScope())
+            try
             {
-                var sp = scope.ServiceProvider;
-                var userService = sp.GetRequiredService<UserService>();
-                var callbackQueryActionFactory = sp.GetRequiredService<ActionsFactory<CallbackQuery>>();
-
-                // Get user state
-                UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id, cancellationToken);
-
-                // Resolve target action based on current state
-                ActionBase<CallbackQuery>? targetStateHandler = callbackQueryActionFactory.GetActionForState(userState);
-
-                if (targetStateHandler == null)
+                using (var scope = _scopeFactory.CreateScope())
                 {
-                    return;
+                    var sp = scope.ServiceProvider;
+                    var userService = sp.GetRequiredService<UserService>();
+                    var callbackQueryActionFactory = sp.GetRequiredService<ActionsFactory<CallbackQuery>>();
+
+                    // Get user state
+                    UserState userState = await userService.GetUserStateByTelegramIdAsync(callback.From.Id, cancellationToken);
+
+                    // Resolve target action based on current state
+                    ActionBase<CallbackQuery>? targetStateHandler = callbackQueryActionFactory.GetActionForState(userState);
+
+                    if (targetStateHandler == null)
+                    {
+                        return;
+                    }
+
+                    //Execute action
+                    await targetStateHandler.Execute(new CallbackQueryUpdateWrapper(callback), cancellationToken);
+
                 }
-
-                //Execute action
-                await targetStateHandler.Execute(new CallbackQueryUpdateWrapper(callback), cancellationToken);
-
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error occured while processing callback query {callback.Id}, \n{ex.Message}, \n{ex.StackTrace}");
+            }
+            // Create service provider scope
         }
 
         private Task UnknownUpdateHandlerAsync(Update update, CancellationToken cancellationToken)
