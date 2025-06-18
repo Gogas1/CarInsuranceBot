@@ -93,16 +93,28 @@ namespace CarInsuranceBot.Core.Services
             return completion.Text;
         }
 
+        /// <summary>
+        /// Provides GPT with available options, user text and tool to determine which option user choose
+        /// </summary>
+        /// <param name="options">Available options</param>
+        /// <param name="defaultOption">Default option</param>
+        /// <param name="userText">User text</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns></returns>
         public async Task<SelectItem> GetSelectionByTextAsync(ICollection<SelectItem> options, SelectItem defaultOption, string userText, CancellationToken cancellationToken)
         {
+            //Init system and user messages
             var system = new ChatMessage(ChatRole.System, string.Format(
                 OPTION_SELECTION_SYSTEM_MESSAGE,
                 string.Join(",", options.Select(o => $"{o.Id} - {o.TextRepresentation}"))));
             var user = new ChatMessage(ChatRole.User, userText);
             SelectItem? select = null;
+            //Init chat options
             var chatOptions = new ChatOptions
             {
+                //Set up the tool
                 ToolMode = ChatToolMode.Auto,
+                //Create a tool to process feedback from GPT about selected option
                 Tools = [AIFunctionFactory.Create((string optionId, string optionText) => {
                     if(!int.TryParse(optionId, out int id)) {
                         return "No valid option selected";

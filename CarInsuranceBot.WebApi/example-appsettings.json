@@ -1,0 +1,26 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "ConnectionStrings": {
+    "SqlServer": "connection string",
+    "AzureSqlServer": "connection string"
+  },
+  "KeysOptions": {
+    "Public256KeyPath": "public key path",
+    "Private256KeyPath": "private key path"
+  },
+  "TelegramBot": {
+    "Token": "bot token",
+    "SecretKey": "secret key",
+    "Public256Key": "",
+    "Private256Key": "",
+    "MindeeKey": "mindee api key",
+    "OpenAiKey": "openai api key",
+    "AdminIds": []
+  },
+  "AllowedHosts": "*"
+}
