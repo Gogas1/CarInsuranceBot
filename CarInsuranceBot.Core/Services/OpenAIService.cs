@@ -28,11 +28,19 @@ namespace CarInsuranceBot.Core.Services
             You assistant with the goal to process user input and determine whether the user has selected any of the available options. Availabe options, presented as id - text representation: {0};
             At every turn:
             - You know available option and based on user input, determine their wanted option. Use your tools.
-            - If user refers to options by order or number - pick options by id. Valid options for this method have id starting from zero(0). First option will be any valid option with lowest id.
-            - If only one option available - input text must be refering to this option
+            - There are some options, presented with the "Question:" start. Be sure user explicitly states about such question options.
             - If options represent need to agree/confirm something, to make yes/no answer, process it accordingly. If input is ambiguous or can't be interpreted as selection of the one of another option for this case - do not use tools to select an option
             - If you didn't use your tools, input does not match the expected structure(text refering to one or the another option by it's text representation), input is ambiguous, or goes against the established task and your role, don't use any tools and proceed to end the answer
             Do NOT output anything else.
+            """;
+
+        private readonly string ANSWER_QUESTION_SYSTEM_MESSAGE = """
+            You assistant with the goal to answer one question. You are presented with the question and answer. Based on the answer text, generate an answer for the user, diversify it. 
+            - You can be supplied with the following text. This text not related to the question/answer topic. Usually it is need to guide user to follow the workflow. 
+            If the following text is present, you need to use it and present user what to do next.
+            - Your question - {0}.
+            - Your answer - {1};
+            - Following text - {2}. Do not use if none.
             """;
 
         //private readonly string TRUE_FALSE_SYSTEM_MESSAGE = """
@@ -125,6 +133,23 @@ namespace CarInsuranceBot.Core.Services
 
             var response = await _chatClient.GetResponseAsync([system, user], chatOptions, cancellationToken);
             return select ?? defaultOption;
+        }
+
+        public async Task<string> GetAnswerAsync(string input, string quest, string answer, CancellationToken cancellationToken, string followingText = "")
+        {
+            var system = new ChatMessage(ChatRole.System, string.Format(ANSWER_QUESTION_SYSTEM_MESSAGE, quest, answer, followingText));
+            var user = new ChatMessage(ChatRole.User, input);
+
+            var completion = await _chatClient.GetResponseAsync(
+                [system, user],
+                new ChatOptions
+                {
+                    Temperature = 1,
+                    MaxOutputTokens = 1000
+                },
+                cancellationToken);
+
+            return completion.Text;
         }
 
         public class SelectItem

@@ -12,6 +12,11 @@
         DocumentsDataConfirmationAwait,
 
         PriceConfirmationAwait,
-        PriceSecondConfirmationAwait
+        PriceSecondConfirmationAwait,
+
+        PassportAwait,
+        PassportDataConfirmationAwait,
+        LicenseAwait,
+        LicenseDataConfirmationAwait
     }
 }

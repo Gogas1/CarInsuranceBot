@@ -104,9 +104,25 @@ namespace CarInsuranceBot.Core.Constants
 
         #region Authorization Shared
 
+        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT = "Share via chat";
+        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_DATA = "share_in_chat";
+
         public static readonly string AUTHORIZATION_DECLINE_BUTTON_TEXT = "I have reconsidered this";
-        public static readonly string SHARE_DOCUMENTS_BUTTON_TEXT = "Share via Passport";
+        public static readonly string AUTHORIZATION_DECLINE_BUTTON_DATA = "decline";
+
+        public static readonly string SHARE_DOCUMENTS_BUTTON_TEXT = "Share via Telegram Passport";
         public static readonly string REDIRECT_URL = "https://gogas1.github.io/CarInsuranceBot/redirect.html?{0}";
+
+        public static readonly string SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT = "Good. Share your passport photo in chat";
+        public static readonly GPTTextSetting SHARE_PASSPORT_IN_CHAT_GPT_SETTINGS = new()
+        {
+            Stage = "Insurance workflow",
+            State = "need to provide passport photo",
+            Action = "User decided to share their documents via chat",
+            AnswerReq = "Write about need to share photo of their passport in chat",
+            FallbackText = SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT
+
+        };
 
         private static AuthorizationRequestParameters GetAuthorizationRequestParameters(ITelegramBotClient botClient, BotConfiguration botConfig, string nonce)
         {
@@ -133,10 +149,13 @@ namespace CarInsuranceBot.Core.Constants
 
             //Construct inline keyboard
             InlineKeyboardButton[][] keyboard = [
-                [InlineKeyboardButton.WithUrl(
-                    AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT,
-                    string.Format(AnswersData.REDIRECT_URL, authReq.Query))],
-                [new InlineKeyboardButton(AUTHORIZATION_DECLINE_BUTTON_TEXT, "decline")]
+                [
+                    InlineKeyboardButton.WithUrl(
+                        AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT,
+                        string.Format(AnswersData.REDIRECT_URL, authReq.Query)),
+                    new InlineKeyboardButton(SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT, SHARE_DOCUMENTS_IN_CHAT_BUTTON_DATA)
+                ],
+                [new InlineKeyboardButton(AUTHORIZATION_DECLINE_BUTTON_TEXT, AUTHORIZATION_DECLINE_BUTTON_DATA)]
                 ];
             return keyboard;
         }
@@ -316,5 +335,33 @@ namespace CarInsuranceBot.Core.Constants
         };
 
         #endregion ProcessDataConfirmationAction
+
+        #region Side questions Shared
+
+        public static readonly string HOW_MY_DATA_IS_STORED_QUESTION = "Question: How my(user's) data is stored?";
+        public static readonly string HOW_MY_DATA_IS_STORED_ANSWER = "Answer: Users data stored for short time and encrypted. It is disposed after processing?";
+
+        public static readonly string IS_MY_DATA_SAFE_QUESTION = "Question: Is my(user's) data safe? Is it stored securely?";
+        public static readonly string IS_MY_DATA_SAFE_ANSWER = @"Answer: User's data encrypted and stored for the short time. We don't store user files and generated documents on a server. 
+            If user want to secure data on the telegram side - they can use Telegram Passport system. It will additionaly secure data.";
+
+        public static readonly string WHAT_DO_YOU_STORE_QUESTION = "Question: What data do you store?";
+        public static readonly string WHAT_DO_YOU_STORE_ANSWER = @"Answer: Documents data stored for one hour maximum - we need to access it during insurance ordering workflow. 
+            It is immidiately purged on the exit from the workflow. For the long time we are storing your telegram Id to handle workflow state between messages";
+
+        public static readonly string WHO_HAS_ACCESS_QUESTION = "Question: Who has access to my data?";
+        public static readonly string WHO_HAS_ACCESS_ANSWER = "Answer: Only Mindee services has access to perform data extraction. No other third party services don't need and don't have access to the data of this bot.";
+
+        public static readonly string HOW_LONG_DATA_STORED_QUESTION = "Question: How long my(user's) documents data is stored";
+        public static readonly string HOW_LONG_DATA_STORED_ANSWER = "Answer: Your documents data is stored for one hour at max, and deleted on the insurance workflow exit";
+
+        public static readonly string HOW_MY_DATA_USED_QUESTION = "Question: How my(user's) data is used. Do you use it for X?";
+        public static readonly string HOW_MY_DATA_USED_ANSWER = @"Answer: Your documents photos is used to extract your data, validate insurance availability and to fill up document we send you. 
+            We use Mindee services to extract data from the photos. Your data is not used in any other requests to the services.";
+
+        public static readonly string HOW_IT_IS_SECURED_QUESTION = "Question: What safeguards are in place against unauthorized access or data breaches?";
+        public static readonly string HOW_IT_IS_SECURED_ANSWER = "Answer: Your data is encrypted. Encryption keys are stored separately from the data. Your data stored for short time";
+
+        #endregion Side questions Shared
     }
 }

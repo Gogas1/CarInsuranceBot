@@ -62,15 +62,19 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             // Init default options
             OpenAIService.SelectItem defautOption = new OpenAIService.SelectItem(
                 -1,
-                "Reconsideration",
+                "Process documents",
                 async _ => await OnProcessDocumentsWay(update, cancellationToken));
 
             //Init options list
             OpenAIService.SelectItem[] options = [
                 new OpenAIService.SelectItem(
                     0,
+                    AnswersData.SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT,
+                    async _ => await OnShareInChat(update, cancellationToken)),
+                new OpenAIService.SelectItem(
+                    1,
                     AnswersData.AUTHORIZATION_DECLINE_BUTTON_TEXT,
-                    async _ => await OnReconsideration(update, cancellationToken))
+                    async _ => await OnReconsideration(update, cancellationToken)),
                 ];
 
             // If user wrote something
@@ -85,6 +89,17 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 
             // Otherwise default option
             defautOption.OnSelection();
+        }
+
+        private async Task OnShareInChat(Message update, CancellationToken cancellationToken)
+        {
+            if(update.From == null)
+            {
+                return;
+            }
+
+            await _botClient.SendMessage(update.Chat, await _openAiService.GetDiversifiedAnswer(AnswersData.SHARE_PASSPORT_IN_CHAT_GPT_SETTINGS, cancellationToken));
+            await _userService.SetUserStateByTelegramIdAsync(UserState.PassportAwait, update.From.Id, cancellationToken);
         }
 
         private async Task OnReconsideration(Message update, CancellationToken cancellationToken)
