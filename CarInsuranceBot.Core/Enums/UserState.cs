@@ -15,8 +15,6 @@
         PriceSecondConfirmationAwait,
 
         PassportAwait,
-        PassportDataConfirmationAwait,
         LicenseAwait,
-        LicenseDataConfirmationAwait
     }
 }

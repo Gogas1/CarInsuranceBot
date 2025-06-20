@@ -20,7 +20,7 @@ namespace CarInsuranceBot.WebApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             // Register db context for the provider
-            builder.Services.AddSqlServerDbContext(true);
+            builder.Services.AddSqlServerDbContext(false);
 
             // Setup telegram bot services
             await SetupTelegramBot(builder);

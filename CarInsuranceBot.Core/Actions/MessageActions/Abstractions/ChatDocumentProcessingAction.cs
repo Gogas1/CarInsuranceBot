@@ -1,5 +1,8 @@
-﻿using CarInsuranceBot.Core.Services;
+﻿using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Extensions;
+using CarInsuranceBot.Core.Services;
 using Mindee;
+using Mindee.Exceptions;
 using Mindee.Input;
 using System;
 using System.Collections.Generic;
@@ -12,14 +15,15 @@ using Telegram.Bot.Types.Passport;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
 {
-    internal abstract class ChatDocumentProcessingAction : MessageActionBase
+    internal abstract class ChatDocumentProcessingAction : GeneralInformationalMessageAction
     {
         private readonly MindeeClient _mindeeClient;
 
-        public ChatDocumentProcessingAction(
+        protected ChatDocumentProcessingAction(
             UserService userService,
             ITelegramBotClient botClient,
-            MindeeClient mindeeClient) : base(userService, botClient)
+            OpenAIService openAiService,
+            MindeeClient mindeeClient) : base(userService, botClient, openAiService)
         {
             _mindeeClient = mindeeClient;
         }
@@ -34,29 +38,76 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
             Action<TDocument?> onInvalidation,
             CancellationToken cancellationToken) where TMindeeDocument : class, new() where TDocument : class, new()
         {
-            // Extract data using Mindee
-            var response = await _mindeeClient.EnqueueAndParseAsync<TMindeeDocument>(
-                new LocalInputSource(photoStream, fileName));
-            cancellationToken.ThrowIfCancellationRequested();
 
-            // Handle error
-            if (response.ApiRequest.StatusCode != 200)
+            try
             {
-                onErrorStatus(response.ApiRequest.StatusCode);
+                // Extract data using Mindee
+                var response = await _mindeeClient.EnqueueAndParseAsync<TMindeeDocument>(
+                    new LocalInputSource(photoStream, fileName));
+                var doc = mappingFunction(response.Document.Inference);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                if (response.ApiRequest.StatusCode != 200)
+                {
+                    onErrorStatus(response.ApiRequest.StatusCode);
+                    return null;
+                }
+
+                // Handle invalidation
+                if (!validationFunction(doc))
+                {
+                    onInvalidation(doc);
+                    return null;
+                }
+
+                // Return mapped document
+                return doc;
+            }
+            catch (HttpRequestException ex)
+            {
+                // Handle error
+                if(ex.StatusCode != null)
+                {
+                    onErrorStatus((int)ex.StatusCode);
+                }
+
                 return null;
             }
+        }
 
-            var doc = mappingFunction(response.Document.Inference);
-
-            // Handle invalidation
-            if (!validationFunction(doc))
+        protected async Task ProcessNoPhoto(Message update, string guidance, string noPhotoMessage, CancellationToken cancellationToken)
+        {
+            if (!string.IsNullOrEmpty(update.Text))
             {
-                onInvalidation(doc);
-                return null;
+                var defaultOption = new OpenAIService.SelectItem(-1, "No question", async _ => await OnNoPhoto(update, noPhotoMessage, cancellationToken));
+                var questions = CreateBaseQuestionsOptionsList(update, guidance, cancellationToken: cancellationToken, replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD);
+                var selectedOption = await _openAiService.GetSelectionByTextAsync(questions, defaultOption, update.Text.Truncate(100), cancellationToken);
+
+                if (selectedOption == null)
+                {
+                    defaultOption.OnSelection();
+                    return;
+                }
+
+                selectedOption.OnSelection();
+                return;
             }
 
-            // Return mapped document
-            return doc;
+            await OnNoPhoto(update, noPhotoMessage, cancellationToken);
+        }
+
+        protected async Task OnNoPhoto(Message update, string message, CancellationToken cancellationToken)
+        {
+            await _botClient.SendMessage(update.Chat, message, replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD, cancellationToken: cancellationToken);
+        }
+
+        protected async Task OnExtractionError(Message update, string message, CancellationToken cancellationToken)
+        {
+            await _botClient.SendMessage(
+                update.Chat,
+                message,
+                replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD,
+                cancellationToken: cancellationToken);
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿using CarInsuranceBot.Core.Configuration;
+using System.Globalization;
+using System.Text;
 using Telegram.Bot;
 using Telegram.Bot.Types.Passport;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -62,7 +64,7 @@ namespace CarInsuranceBot.Core.Constants
         public static readonly string HOME_STAGE = "Basic \"Home\" state";
         public static readonly string HOME_STATE = "Get basic availalble operations";
         public static readonly string HOME_ACTION = "User has interacted with the bot, having no state or active workflow";
-        public static readonly string HOME_ANSWER_REQ = "Write a message offering user to proceed with one of the available actions";
+        public static readonly string HOME_ANSWER_REQ = "Write a message offering user to proceed with one of the available actions. Don't list the actions.";
 
         public static readonly GPTTextSetting HOME_MESSAGE_SETTINGS = new()
         {
@@ -124,6 +126,26 @@ namespace CarInsuranceBot.Core.Constants
 
         };
 
+        public static readonly string SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT = "Good. Share your driving license photo in chat";
+        public static readonly GPTTextSetting SHARE_LICENSE_IN_CHAT_GPT_SETTINGS = new()
+        {
+            Stage = "Insurance workflow",
+            State = "need to provide driving license photo",
+            Action = "User submitted passport photo and went to the next step",
+            AnswerReq = "Write about success of submitting passport photo and need to share photo of their driving license in chat",
+            FallbackText = SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT
+
+        };
+
+        public static readonly string INSURANCE_ORDERING_DOCUMENTS_IN_CHAT_OPTION = "User want to proceed documents processing using chat. Want to share documents in chat";
+        public static readonly string INSURANCE_ORDERING_RECONSIDERATION_OPTION = "User don't want to proceed with insurance. Want go back to the home state. Decline the workflow.";
+
+        public static readonly string STOP_WORKFLOW_BUTTON_TEXT = "Back to home";
+        public static readonly string STOP_WORKFLOW_BUTTON_DATA = "workflow_stop";
+        public static InlineKeyboardButton[] STOP_WORKFLOW_KEYBOARD = [
+            new InlineKeyboardButton(STOP_WORKFLOW_BUTTON_TEXT, STOP_WORKFLOW_BUTTON_DATA)
+            ];
+
         private static AuthorizationRequestParameters GetAuthorizationRequestParameters(ITelegramBotClient botClient, BotConfiguration botConfig, string nonce)
         {
             // Init and return telegram authorization parameters to request passport and driver licenze access
@@ -141,18 +163,19 @@ namespace CarInsuranceBot.Core.Constants
                 });
         }
 
-
+        private static readonly CompositeFormat _redirectUrlFormat = CompositeFormat.Parse(AnswersData.REDIRECT_URL);
         public static InlineKeyboardButton[][] GetAuthorizationKeyboard(ITelegramBotClient client, BotConfiguration botConfig, string nonce)
         {
             // Get auth parameters
             var authReq = GetAuthorizationRequestParameters(client, botConfig, nonce);
+
 
             //Construct inline keyboard
             InlineKeyboardButton[][] keyboard = [
                 [
                     InlineKeyboardButton.WithUrl(
                         AnswersData.SHARE_DOCUMENTS_BUTTON_TEXT,
-                        string.Format(AnswersData.REDIRECT_URL, authReq.Query)),
+                        string.Format(CultureInfo.InvariantCulture, _redirectUrlFormat, authReq.Query)),
                     new InlineKeyboardButton(SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT, SHARE_DOCUMENTS_IN_CHAT_BUTTON_DATA)
                 ],
                 [new InlineKeyboardButton(AUTHORIZATION_DECLINE_BUTTON_TEXT, AUTHORIZATION_DECLINE_BUTTON_DATA)]
@@ -210,7 +233,7 @@ namespace CarInsuranceBot.Core.Constants
             Stage = "Documents processing",
             State = "application failed to get data from the data extraction api",
             Action = "Application has received answer from the data extraction api, but it failed to extract info from some of the documents",
-            AnswerReq = "Write we have failed to extract data from some of the user's document, so user need to try again",
+            AnswerReq = "Write we have failed to extract data from some of the user's document, so user need to try again and be sure they submit correct document",
             FallbackText = NO_DOCUMENT_DATA_FALLBACK_TEXT,
         };
 
@@ -362,6 +385,28 @@ namespace CarInsuranceBot.Core.Constants
         public static readonly string HOW_IT_IS_SECURED_QUESTION = "Question: What safeguards are in place against unauthorized access or data breaches?";
         public static readonly string HOW_IT_IS_SECURED_ANSWER = "Answer: Your data is encrypted. Encryption keys are stored separately from the data. Your data stored for short time";
 
+        public static readonly string I_DONT_WANT_TO_GIVE_DATA_QUESTION = "Question: What if I don't want to share my private data?";
+        public static readonly string I_DONT_WANT_TO_GIVE_DATA_ANSWER = "Answer: Tell we are sorry, but we need to get access to your data for the service we provide. User data is secured during the process.";
+
         #endregion Side questions Shared
+
+        #region Guidance answers
+
+        //DefaultHomeMessage
+        public static readonly string HOME_STATE_GUIDANCE = "Answer to the user they on this step need to select one of the available bot actions.";
+
+        //PassportProcessingMessageAction
+        public static readonly string PASSPORT_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their passport.";
+
+        //LicenseProcessingMessageAction
+        public static readonly string LICENSE_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their driving license.";
+
+        //ProcessDocumentsDataAction
+        public static readonly string DOCUMENTS_AWAIT_STATE_GUIDANCE = "Answer to the user they need use Telegram Passport or choose to share documents via chat to proceed.";
+
+        //ProcessDataConfirmationMessageAction
+        public static readonly string DATA_CONFIRMATION_AWAIT_STATE_GUIDANCE = "Answer to the user they need to confirm or deconfirm provided data corectness.";
+
+        #endregion Guidance answers        
     }
 }

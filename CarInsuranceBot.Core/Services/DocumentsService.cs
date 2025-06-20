@@ -79,6 +79,19 @@ namespace CarInsuranceBot.Core.Services
             return new UserDocuments(idData, licenseData);
         }
 
+        internal async Task<IdDocument?> GetIdDataForUser(long userId, CancellationToken cancellationToken)
+        {
+            var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
+            if (string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey))
+            {
+                return null;
+            }
+
+            var idData = await _secretCache.RetrieveAsync<IdDocument>(userInputState.CreateInsuranceFlow.IdCacheKey);
+
+            return idData;
+        }
+
         /// <summary>
         /// Deletes cached data of the user
         /// </summary>

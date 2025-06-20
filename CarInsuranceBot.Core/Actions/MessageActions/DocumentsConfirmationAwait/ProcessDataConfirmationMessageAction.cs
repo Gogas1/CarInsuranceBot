@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.Core.Configuration;
+﻿using CarInsuranceBot.Core.Actions.MessageActions.Abstractions;
+using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Extensions;
 using CarInsuranceBot.Core.Services;
@@ -13,9 +14,8 @@ using Telegram.Bot.Types;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait
 {
-    internal class ProcessDataConfirmationMessageAction : MessageActionBase
-    {
-        private readonly OpenAIService _openAiService;
+    internal class ProcessDataConfirmationMessageAction : GeneralInformationalMessageAction
+    {        
         private readonly DocumentsService _documentsService;
         private readonly BotConfiguration _botConfiguration;
 
@@ -24,7 +24,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait
             ITelegramBotClient botClient,
             OpenAIService openAIService,
             DocumentsService documentsService,
-            IOptions<BotConfiguration> botConfiguration) : base(userService, botClient)
+            IOptions<BotConfiguration> botConfiguration) : base(userService, botClient, openAIService)
         {
             _openAiService = openAIService;
             _documentsService = documentsService;
@@ -41,7 +41,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait
                 async _ => await OnNoAnswer(update, cancellationToken));
 
             //Init options list
-            OpenAIService.SelectItem[] options = [
+            List<OpenAIService.SelectItem> options = [
                 new OpenAIService.SelectItem(
                     0,
                     "Yes, I confirm data is correct",
@@ -54,6 +54,11 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait
 
             if (update.Text != null)
             {
+                options.AddRange(CreateBaseQuestionsOptionsList(
+                    update,
+                    AnswersData.DATA_CONFIRMATION_AWAIT_STATE_GUIDANCE,
+                    AnswersData.DATA_CONFIRMATION_KEYBOARD,
+                    cancellationToken));
                 // Get selected option by GPT and execute
                 selectedOption = await _openAiService.GetSelectionByTextAsync(options, defautOption, update.Text.Truncate(100), cancellationToken);
                 selectedOption.OnSelection();

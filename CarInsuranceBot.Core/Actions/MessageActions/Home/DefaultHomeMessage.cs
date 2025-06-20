@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.Core.Configuration;
+﻿using CarInsuranceBot.Core.Actions.MessageActions.Abstractions;
+using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Extensions;
@@ -12,22 +13,20 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Home
     /// <summary>
     /// <see cref="MessageActionBase"/> implementation to handle home state of the bot.
     /// </summary>
-    internal class DefaultHomeMessage : MessageActionBase
+    internal class DefaultHomeMessage : GeneralInformationalMessageAction
     {
-        private readonly OpenAIService _openAiService;
         private readonly BotConfiguration _botConfig;
         private readonly DocumentsService _documentsService;
 
         public DefaultHomeMessage(
             UserService userService,
             ITelegramBotClient botClient,
-            OpenAIService openAIService,
-            DocumentsService documentsService,
-            IOptions<BotConfiguration> botConfig) : base(userService, botClient)
+            OpenAIService openAiService,
+            IOptions<BotConfiguration> botConfig,
+            DocumentsService documentsService) : base(userService, botClient, openAiService)
         {
-            _openAiService = openAIService;
-            _documentsService = documentsService;
             _botConfig = botConfig.Value;
+            _documentsService = documentsService;
         }
 
         protected override async Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
@@ -39,32 +38,38 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Home
 
             OpenAIService.SelectItem? selectedOption = null;
             // Init default options
-            OpenAIService.SelectItem defautOption = new OpenAIService.SelectItem(
+            OpenAIService.SelectItem defaultOption = new OpenAIService.SelectItem(
                 -1,
                 "Get bot options, start conversation with a bot",
                 async _ => await OnHomeOption(update, cancellationToken));
 
             //Init options list
-            OpenAIService.SelectItem[] options = [
-                defautOption,
+            List<OpenAIService.SelectItem> options = [
+                defaultOption,
                 new OpenAIService.SelectItem(
                     0, 
                     AnswersData.GET_INSURANCE_BUTTON_TEXT,
                     async _ => await OnInsuranceOption(update, cancellationToken))
                 ];
 
+            options.AddRange(CreateBaseQuestionsOptionsList(
+                update,
+                AnswersData.HOME_STATE_GUIDANCE,
+                AnswersData.HOME_KEYBOARD,
+                cancellationToken));
+
             // If user wrote something
             if (update.Text != null)
             {
                 // Get selected option by GPT and execute
-                selectedOption = await _openAiService.GetSelectionByTextAsync(options, defautOption, update.Text.Truncate(100), cancellationToken);
+                selectedOption = await _openAiService.GetSelectionByTextAsync(options, defaultOption, update.Text.Truncate(100), cancellationToken);
                 selectedOption.OnSelection();
 
                 return;
             }
 
             // Otherwise default option
-            defautOption.OnSelection();
+            defaultOption.OnSelection();
         }
 
         private async Task OnHomeOption(Message update, CancellationToken cancellationToken)

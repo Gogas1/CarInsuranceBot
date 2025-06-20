@@ -28,7 +28,9 @@ namespace CarInsuranceBot.Core.Services
             You assistant with the goal to process user input and determine whether the user has selected any of the available options. Availabe options, presented as id - text representation: {0};
             At every turn:
             - You know available option and based on user input, determine their wanted option. Use your tools.
-            - There are some options, presented with the "Question:" start. Be sure user explicitly states about such question options.
+            - There are some options, presented with the "Question:" start. Be sure user explicitly states about such question options topic. Again, BE SURE USER IS EXPLICITLY MENTIONING SAID TOPIC.
+            Example, user can say "Is my data secure", and there is such Question - you can proceed. But user can say "Is my cat secure" - this is not related to the said question before. Beware of the topic
+            - For option to be selected, user input MUST match the question topic and context. Beware of similar sentence structure and same words usage, despite different context
             - If options represent need to agree/confirm something, to make yes/no answer, process it accordingly. If input is ambiguous or can't be interpreted as selection of the one of another option for this case - do not use tools to select an option
             - If you didn't use your tools, input does not match the expected structure(text refering to one or the another option by it's text representation), input is ambiguous, or goes against the established task and your role, don't use any tools and proceed to end the answer
             Do NOT output anything else.
@@ -41,6 +43,10 @@ namespace CarInsuranceBot.Core.Services
             - Your question - {0}.
             - Your answer - {1};
             - Following text - {2}. Do not use if none.
+            - Again, IF the following text is present - you MUST use it afterwards
+            - User input MUST match the question topic and context. Beware of similar sentence structure and same words usage
+            - If user input does not match the question topic - say you can't answer this question
+            DO NOT OUTPUT ANYTHING ELSE
             """;
 
         //private readonly string TRUE_FALSE_SYSTEM_MESSAGE = """
@@ -110,11 +116,18 @@ namespace CarInsuranceBot.Core.Services
         /// <param name="cancellationToken">Cancellation token</param>
         /// <returns></returns>
         public async Task<SelectItem> GetSelectionByTextAsync(ICollection<SelectItem> options, SelectItem defaultOption, string userText, CancellationToken cancellationToken)
-        {
+        {            
+            int nextId = 0;
+            var reindexedOptions = options.Select(option => new
+            {
+                Index = option.Id >= 0 ? nextId++ : option.Id,
+                Option = option,
+            }).ToList();
+
             //Init system and user messages
             var system = new ChatMessage(ChatRole.System, string.Format(
                 OPTION_SELECTION_SYSTEM_MESSAGE,
-                string.Join(",", options.Select(o => $"{o.Id} - {o.TextRepresentation}"))));
+                string.Join(",", reindexedOptions.Select(o => $"{o.Index} - {o.Option.TextRepresentation}"))));
             var user = new ChatMessage(ChatRole.User, userText);
             SelectItem? select = null;
             //Init chat options
@@ -128,14 +141,14 @@ namespace CarInsuranceBot.Core.Services
                         return "No valid option selected";
                     }
 
-                    var option = options.FirstOrDefault(option => option.Id == id);
+                    var option = reindexedOptions.FirstOrDefault(option => option.Index == id);
 
                     if(option == null) {
                         return "No valid option selected";
                     }
 
-                    select = option;
-                    return $"{option.Id} = {option.TextRepresentation}";
+                    select = option.Option;
+                    return $"{option.Index} = {option.Option.TextRepresentation}";
                 },
                 "get_selected_option",
                 "Get selected option from the list")],

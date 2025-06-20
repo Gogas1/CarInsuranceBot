@@ -17,8 +17,8 @@
             return
                 !string.IsNullOrEmpty(DocumentNumber) &&
                 !string.IsNullOrEmpty(CountryCode) &&
-                Surnames.Any() &&
-                Names.Any() &&
+                Surnames.Count != 0 &&
+                Names.Count != 0 &&
                 BirthDate != DateTime.MinValue &&
                 ExpiryDate != DateTime.MinValue;
         }

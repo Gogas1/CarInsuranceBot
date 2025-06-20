@@ -2,12 +2,17 @@
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsConfirmationAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.Home;
+using CarInsuranceBot.Core.Actions.CallbackQueryActions.LicenseAwait;
+using CarInsuranceBot.Core.Actions.CallbackQueryActions.PassportAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwait;
 using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceSecondConfirmation;
 using CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.Home;
+using CarInsuranceBot.Core.Actions.MessageActions.LicenseAwait;
 using CarInsuranceBot.Core.Actions.MessageActions.None;
+using CarInsuranceBot.Core.Actions.MessageActions.PassportAwait;
+using CarInsuranceBot.Core.Actions.MessageActions.PriceConfirmationShared;
 using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Enums;
@@ -138,7 +143,7 @@ namespace CarInsuranceBot.Core.Extensions
                     BotConfiguration botConfiguration = serviceProvider.GetRequiredService<IOptions<BotConfiguration>>().Value;
                     TelegramBotClientOptions options = new(botConfiguration.Token);
                     var bot = new TelegramBotClient(options, httpClient);
-                    Task.WaitAll(bot.DeleteWebhook());
+                    bot.DeleteWebhook().Wait();
                     return bot;
                 });
 
@@ -176,12 +181,17 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddTransient<DefaultHomeMessage>();
             services.AddTransient<ProcessDocumentsDataAction>();
             services.AddTransient<ProcessDataConfirmationMessageAction>();
+            services.AddTransient<PassportProcessingMessageAction>();
+            services.AddTransient<LicenseProcessingMessageAction>();
+            services.AddTransient<PriceConfirmationMessageAction>();
 
-            services.AddTransient<ProcessReconsiderationAction>();
+            services.AddTransient<ProcessDocumentsAwaitCallbackAction>();
             services.AddTransient<InitCreateInsuranceFlow>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();
             services.AddTransient<ProcessSecondPriceConfirmationCallbackAction>();
+            services.AddTransient<PassportAwaitCallbackAction>();
+            services.AddTransient<LicenseAwaitCallbackAction>();
 
             return services;
         }
@@ -202,7 +212,11 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.None, () => scopeFactory.GetAction<Message, HelloMessageAction>() },
                     { UserState.Home, () => scopeFactory.GetAction<Message, DefaultHomeMessage>() },
                     { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() },
-                    { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessDataConfirmationMessageAction>() }
+                    { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessDataConfirmationMessageAction>() },
+                    { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
+                    { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
+                    { UserState.PassportAwait, () => scopeFactory.GetAction<Message, PassportProcessingMessageAction>() },
+                    { UserState.LicenseAwait, () => scopeFactory.GetAction<Message, LicenseProcessingMessageAction>() },
                 };
 
                 return new ActionsFactory<Message>(actions);
@@ -215,10 +229,12 @@ namespace CarInsuranceBot.Core.Extensions
                 var actions = new Dictionary<UserState, Func<ActionBase<CallbackQuery>>>
                 {
                     { UserState.Home, () => scopeFactory.GetAction<CallbackQuery, InitCreateInsuranceFlow>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessReconsiderationAction>() },
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDocumentsAwaitCallbackAction>() },
                     { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDataConfirmationCallbackAction>() },
                     { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPriceConfirmationCallbackAction>() },
                     { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction >() },
+                    { UserState.PassportAwait, () => scopeFactory.GetAction<CallbackQuery, PassportAwaitCallbackAction>() },
+                    { UserState.LicenseAwait, () => scopeFactory.GetAction<CallbackQuery, LicenseAwaitCallbackAction>() },
                 };
 
                 return new ActionsFactory<CallbackQuery>(actions);

@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.Core.Cache;
+﻿using CarInsuranceBot.Core.Actions.MessageActions.Abstractions;
+using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Enums;
@@ -11,6 +12,8 @@ using Mindee;
 using Mindee.Input;
 using Mindee.Product.DriverLicense;
 using Mindee.Product.InternationalId;
+using System.Globalization;
+using System.Text;
 using System.Threading;
 using Telegram.Bot;
 using Telegram.Bot.Passport;
@@ -25,16 +28,16 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
     /// <see cref="Enums.UserState.DocumentsDataConfirmationAwait"/> if documents data extracted, 
     /// <see cref="Enums.UserState.DocumentsAwait"/> if documents processing error,
     /// </summary>
-    internal class ProcessDocumentsDataAction : MessageActionBase
+    internal class ProcessDocumentsDataAction : GeneralInformationalMessageAction
     {
         private readonly BotConfiguration _botConfig;
         private readonly MindeeClient _mindeeClient;
         private readonly SecretCache _secretCache;
-        private readonly OpenAIService _openAiService;
         private readonly DocumentsService _documentsService;
 
         protected override TimeSpan Timeout => TimeSpan.FromSeconds(20);
-
+        private static readonly CompositeFormat _documentsProvidedFormat =
+        CompositeFormat.Parse(AnswersData.DOCUMENTS_PROVIDED_TEXT);
         public ProcessDocumentsDataAction(
             UserService userService,
             ITelegramBotClient botClient,
@@ -42,7 +45,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
             MindeeClient mindeeClient,
             SecretCache secretCache,
             OpenAIService openAiService,
-            DocumentsService documentsService) : base(userService, botClient)
+            DocumentsService documentsService) : base(userService, botClient, openAiService)
         {
             _botConfig = botOptions.Value;
             _mindeeClient = mindeeClient;
@@ -66,20 +69,22 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
                 async _ => await OnProcessDocumentsWay(update, cancellationToken));
 
             //Init options list
-            OpenAIService.SelectItem[] options = [
+            List<OpenAIService.SelectItem> options = [
                 new OpenAIService.SelectItem(
                     0,
-                    AnswersData.SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT,
+                    AnswersData.INSURANCE_ORDERING_DOCUMENTS_IN_CHAT_OPTION,
                     async _ => await OnShareInChat(update, cancellationToken)),
                 new OpenAIService.SelectItem(
                     1,
-                    AnswersData.AUTHORIZATION_DECLINE_BUTTON_TEXT,
+                    AnswersData.INSURANCE_ORDERING_RECONSIDERATION_OPTION,
                     async _ => await OnReconsideration(update, cancellationToken)),
                 ];
 
             // If user wrote something
             if (update.Text != null)
             {
+
+                options.AddRange(CreateBaseQuestionsOptionsList(update, AnswersData.DOCUMENTS_AWAIT_STATE_GUIDANCE, cancellationToken: cancellationToken));
                 // Get selected option by GPT and execute
                 selectedOption = await _openAiService.GetSelectionByTextAsync(options, defautOption, update.Text.Truncate(100), cancellationToken);
                 selectedOption.OnSelection();
@@ -255,7 +260,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
 
             // Create documents data confirmation message text
             var message = string.Format(
-                AnswersData.DOCUMENTS_PROVIDED_TEXT,
+                CultureInfo.InvariantCulture,
+                _documentsProvidedFormat,
                 idDoc.DocumentNumber,
                 idDoc.CountryCode,
                 idDoc.Surnames.First(),

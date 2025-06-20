@@ -1,9 +1,11 @@
 ﻿using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Extensions;
 using CarInsuranceBot.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -13,11 +15,12 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
 {
     internal abstract class GeneralInformationalMessageAction : MessageActionBase
     {
-        private OpenAIService _openAiService;
+        protected OpenAIService _openAiService;
+
         private List<OpenAIService.SelectItem> _injectVariants = new();
 
         private string guidanceInstructions = "";
-        private ReplyMarkup? replyMarkup = null;
+        private ReplyMarkup? replyMarkup;
 
         protected GeneralInformationalMessageAction(
             UserService userService,
@@ -26,14 +29,17 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
         {
             
             _openAiService = openAiService;
-        }
+        }       
 
-        protected override Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
+        protected List<OpenAIService.SelectItem> CreateBaseQuestionsOptionsList(Message update, string guidanceInstructions, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
         {
-            _injectVariants.AddRange([
+            this.guidanceInstructions = guidanceInstructions;
+            this.replyMarkup = replyMarkup;
+
+            return [
                 new OpenAIService.SelectItem(
-                    0, 
-                    AnswersData.HOW_MY_DATA_IS_STORED_QUESTION, 
+                    0,
+                    AnswersData.HOW_MY_DATA_IS_STORED_QUESTION,
                     async _ => await AnswerQuestion(
                         update,
                         update.Text,
@@ -41,20 +47,66 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
                         AnswersData.HOW_MY_DATA_IS_STORED_ANSWER,
                         guidanceInstructions,
                         cancellationToken)),
-                ]);
-
-            return Task.CompletedTask;
-        }        
-
-        protected void InjectQuestionsOptions(ICollection<OpenAIService.SelectItem> options, string guidanceInstructions, ReplyMarkup? replyMarkup = null)
-        {
-            this.guidanceInstructions = guidanceInstructions;
-            this.replyMarkup = replyMarkup;
-
-            foreach (var item in _injectVariants)
-            {
-                options.Add(item);
-            }
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.IS_MY_DATA_SAFE_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.IS_MY_DATA_SAFE_QUESTION,
+                        AnswersData.IS_MY_DATA_SAFE_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.WHAT_DO_YOU_STORE_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.WHAT_DO_YOU_STORE_QUESTION,
+                        AnswersData.WHAT_DO_YOU_STORE_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.WHO_HAS_ACCESS_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.WHO_HAS_ACCESS_QUESTION,
+                        AnswersData.WHO_HAS_ACCESS_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.HOW_MY_DATA_USED_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.HOW_MY_DATA_USED_QUESTION,
+                        AnswersData.HOW_MY_DATA_USED_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.HOW_IT_IS_SECURED_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.HOW_IT_IS_SECURED_QUESTION,
+                        AnswersData.HOW_IT_IS_SECURED_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
+                    AnswersData.I_DONT_WANT_TO_GIVE_DATA_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.I_DONT_WANT_TO_GIVE_DATA_QUESTION,
+                        AnswersData.I_DONT_WANT_TO_GIVE_DATA_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken))];
         }
 
         private async Task AnswerQuestion(Message update, string? input, string question, string answer, string guidanceInstructions, CancellationToken cancellationToken)
@@ -64,7 +116,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
                 return;
             }
 
-            var gptAnswer = await _openAiService.GetAnswerAsync(input, question, answer, cancellationToken, guidanceInstructions);                        
+            var gptAnswer = await _openAiService.GetAnswerAsync(input.Truncate(200), question, answer, cancellationToken, guidanceInstructions);                        
             await _botClient.SendMessage(update.Chat, gptAnswer, replyMarkup: replyMarkup, cancellationToken: cancellationToken);
 
         }
