@@ -33,7 +33,7 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
         }
 
         /// <summary>
-        /// Implemented action execution method
+        /// Implemented action execution method. Handles bot busyness and timeout
         /// </summary>
         /// <param name="update"><inheritdoc/></param>
         /// <param name="cancellationToken"><inheritdoc/></param>

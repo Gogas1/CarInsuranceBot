@@ -102,7 +102,7 @@ namespace CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwa
             stream.Position = 0;
 
             // Instantiate telegram file to handle file info
-            var file = new InputFileStream(stream, "INSURANCE POLICY");
+            var file = new InputFileStream(stream, "INSURANCE POLICY.pdf");
 
             // Change state
             await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.Home, update.From.Id, cancellationToken);
