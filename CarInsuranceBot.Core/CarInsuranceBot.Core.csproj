@@ -19,7 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Actions\MessageActions\DocumentsConfirmationAwait\" />
+    <Folder Include="Actions\InsuranceWorkflow\1. Process Document Submitting Way\1.5 Process Vehicle Id Data Confirmation\" />
+    <Folder Include="Actions\InsuranceWorkflow\1. Process Document Submitting Way\1.6 Process Vehicle Id Data Correction\" />
   </ItemGroup>
 
 </Project>

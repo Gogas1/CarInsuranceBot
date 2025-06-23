@@ -10,10 +10,12 @@ namespace CarInsuranceBot.Core.States.Abstractions
     internal class ActionsFactory<TUpdateType>
     {
         private readonly Dictionary<UserState, Func<ActionBase<TUpdateType>>> _actions;
+        private readonly Func<ActionBase<TUpdateType>>? _defaultActionFactory;
 
-        public ActionsFactory(Dictionary<UserState, Func<ActionBase<TUpdateType>>> actions)
+        public ActionsFactory(Dictionary<UserState, Func<ActionBase<TUpdateType>>> actions, Func<ActionBase<TUpdateType>>? defaultActionFactory = null)
         {
             _actions = actions;
+            _defaultActionFactory = defaultActionFactory;
         }
 
         /// <summary>
@@ -28,7 +30,7 @@ namespace CarInsuranceBot.Core.States.Abstractions
                 return action();
             }
 
-            return null;
+            return _defaultActionFactory?.Invoke() ?? null;
         }
     }
 }

@@ -253,7 +253,21 @@ namespace CarInsuranceBot.Core.Constants
             Category - {8}
             """;
 
-        #endregion ProcessDocumentsDataAction
+        #endregion ProcessDocumentsDataAction   
+
+        #region PassportProcessingShared
+
+        public static string PASSPORT_DATA_TEMPLATE_TEXT = """
+            Validate extracted passport data and confirm if it is correct.
+            Number - {0};
+            Country code - {1};
+            Surname - {2};
+            Name - {3};
+            Birth date - {4};
+            Expiry date - {5}
+            """;
+
+        #endregion PassportProcessingShared
 
         #region Data confirmation shared
 
@@ -266,12 +280,17 @@ namespace CarInsuranceBot.Core.Constants
         public static readonly string DATA_DECLINE_BUTTON_DATA = "no";
 
         // Data confirmation keyboard
-        public static readonly InlineKeyboardButton[] DATA_CONFIRMATION_KEYBOARD = [
-                new InlineKeyboardButton(DATA_CONFIRMATION_BUTTON_TEXT, DATA_CONFIRMATION_BUTTON_DATA),
-                new InlineKeyboardButton(DATA_DECLINE_BUTTON_TEXT, DATA_DECLINE_BUTTON_DATA)
+        public static readonly InlineKeyboardButton[][] DATA_CONFIRMATION_KEYBOARD = [
+                [
+                    new InlineKeyboardButton(DATA_CONFIRMATION_BUTTON_TEXT, DATA_CONFIRMATION_BUTTON_DATA),
+                    new InlineKeyboardButton(DATA_DECLINE_BUTTON_TEXT, DATA_DECLINE_BUTTON_DATA)
+                ],
+                [
+                    new InlineKeyboardButton(STOP_WORKFLOW_BUTTON_TEXT, STOP_WORKFLOW_BUTTON_DATA)
+                ]
                 ];
 
-        #endregion Data confirmation shared        
+        #endregion Data confirmation shared
 
         #region Price agreement shared
 

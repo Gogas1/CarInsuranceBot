@@ -1,18 +1,7 @@
 ﻿using CarInsuranceBot.Core.Actions.Abstractions;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsAwait;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.DocumentsConfirmationAwait;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.Home;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.LicenseAwait;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.PassportAwait;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceConfirmationAwait;
-using CarInsuranceBot.Core.Actions.CallbackQueryActions.PriceSecondConfirmation;
-using CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait;
-using CarInsuranceBot.Core.Actions.MessageActions.DocumentsConfirmationAwait;
-using CarInsuranceBot.Core.Actions.MessageActions.Home;
-using CarInsuranceBot.Core.Actions.MessageActions.LicenseAwait;
-using CarInsuranceBot.Core.Actions.MessageActions.None;
-using CarInsuranceBot.Core.Actions.MessageActions.PassportAwait;
-using CarInsuranceBot.Core.Actions.MessageActions.PriceConfirmationShared;
+using CarInsuranceBot.Core.Actions.CallbackQueryActions;
+using CarInsuranceBot.Core.Actions.DefaultActions;
+using CarInsuranceBot.Core.Actions.MessageActions;
 using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Enums;
@@ -177,20 +166,21 @@ namespace CarInsuranceBot.Core.Extensions
         /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddActions(this IServiceCollection services)
         {
-            services.AddTransient<HelloMessageAction>();
-            services.AddTransient<DefaultHomeMessage>();
-            services.AddTransient<ProcessDocumentsDataAction>();
+            services.AddTransient<DefaultMessageAction>();
+            services.AddTransient<HandleHomeMessageAction>();
+            services.AddTransient<ProcessDocumentsSubmittingMessageAction>();
             services.AddTransient<ProcessDataConfirmationMessageAction>();
             services.AddTransient<PassportProcessingMessageAction>();
             services.AddTransient<LicenseProcessingMessageAction>();
             services.AddTransient<PriceConfirmationMessageAction>();
 
-            services.AddTransient<ProcessDocumentsAwaitCallbackAction>();
-            services.AddTransient<InitCreateInsuranceFlow>();
+            services.AddTransient<DefaultCallbackQueryAction>();
+            services.AddTransient<ProcessDocumentsSubmittingCallbackQueryAction>();
+            services.AddTransient<HandleHomeCallbackQueryAction>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();
             services.AddTransient<ProcessSecondPriceConfirmationCallbackAction>();
-            services.AddTransient<PassportAwaitCallbackAction>();
+            services.AddTransient<PassportProcessingCallbackQueryAction>();
             services.AddTransient<LicenseAwaitCallbackAction>();
 
             return services;
@@ -209,9 +199,8 @@ namespace CarInsuranceBot.Core.Extensions
 
                 var actions = new Dictionary<UserState, Func<ActionBase<Message>>>
                 {
-                    { UserState.None, () => scopeFactory.GetAction<Message, HelloMessageAction>() },
-                    { UserState.Home, () => scopeFactory.GetAction<Message, DefaultHomeMessage>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsDataAction>() },
+                    { UserState.Home, () => scopeFactory.GetAction<Message, HandleHomeMessageAction>() },
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<Message, ProcessDocumentsSubmittingMessageAction>() },
                     { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessDataConfirmationMessageAction>() },
                     { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
                     { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
@@ -219,7 +208,7 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.LicenseAwait, () => scopeFactory.GetAction<Message, LicenseProcessingMessageAction>() },
                 };
 
-                return new ActionsFactory<Message>(actions);
+                return new ActionsFactory<Message>(actions, () => scopeFactory.GetAction<Message, DefaultMessageAction>());
             });
 
             services.AddScoped<ActionsFactory<CallbackQuery>>(serviceProvider =>
@@ -228,16 +217,16 @@ namespace CarInsuranceBot.Core.Extensions
 
                 var actions = new Dictionary<UserState, Func<ActionBase<CallbackQuery>>>
                 {
-                    { UserState.Home, () => scopeFactory.GetAction<CallbackQuery, InitCreateInsuranceFlow>() },
-                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDocumentsAwaitCallbackAction>() },
+                    { UserState.Home, () => scopeFactory.GetAction<CallbackQuery, HandleHomeCallbackQueryAction>() },
+                    { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDocumentsSubmittingCallbackQueryAction>() },
                     { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDataConfirmationCallbackAction>() },
                     { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPriceConfirmationCallbackAction>() },
                     { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction >() },
-                    { UserState.PassportAwait, () => scopeFactory.GetAction<CallbackQuery, PassportAwaitCallbackAction>() },
-                    { UserState.LicenseAwait, () => scopeFactory.GetAction<CallbackQuery, LicenseAwaitCallbackAction>() },
+                    //{ UserState.PassportAwait, () => scopeFactory.GetAction<CallbackQuery, PassportAwaitCallbackAction>() },
+                    //{ UserState.LicenseAwait, () => scopeFactory.GetAction<CallbackQuery, LicenseAwaitCallbackAction>() },
                 };
 
-                return new ActionsFactory<CallbackQuery>(actions);
+                return new ActionsFactory<CallbackQuery>(actions, () => scopeFactory.GetAction<CallbackQuery, DefaultCallbackQueryAction>());
             });
 
             return services;

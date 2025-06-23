@@ -16,5 +16,11 @@
 
         PassportAwait,
         LicenseAwait,
+
+        PassportDataConfirmationAwait,
+        PassportDataCorrectionAwait,
+
+        LicenseDataConfirmationAwait,
+        LicenseDataCorrectionAwait
     }
 }
