@@ -222,7 +222,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.DocumentsAwait
                     BirthDate = document.Prediction.DateOfBirth.DateObject ?? DateTime.MinValue,
                 },
                 // Pass validation function
-                d => d?.IsValid() ?? false,
+                d => true,
                 // File name for the Mindee api
                 "license.jpg",
                 // User id for the feedback

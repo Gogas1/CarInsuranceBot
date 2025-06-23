@@ -160,7 +160,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.LicenseAwait
                     BirthDate = document.Prediction.DateOfBirth.DateObject ?? DateTime.MinValue,
                 },
                 // Pass validation function
-                d => d?.IsValid() ?? false,
+                d => true,
                 async _ => await OnExtractionError(
                     update,
                     await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),

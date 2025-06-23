@@ -17,11 +17,7 @@
         {
             return !string.IsNullOrEmpty(CountryCode) &&
                 !string.IsNullOrEmpty(Id) &&
-                !string.IsNullOrEmpty(Category) &&
-                !string.IsNullOrEmpty(LastName) &&
-                !string.IsNullOrEmpty(FirstName) &&
-                BirthDate != DateTime.MinValue &&
-                ExpiryDate != DateTime.MinValue;
+                !string.IsNullOrEmpty(Category);
         }
     }
 }

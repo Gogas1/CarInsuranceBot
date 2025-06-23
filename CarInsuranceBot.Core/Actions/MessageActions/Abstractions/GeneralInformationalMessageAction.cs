@@ -39,6 +39,16 @@ namespace CarInsuranceBot.Core.Actions.MessageActions.Abstractions
             return [
                 new OpenAIService.SelectItem(
                     0,
+                    AnswersData.FOR_WHAT_QUESTION,
+                    async _ => await AnswerQuestion(
+                        update,
+                        update.Text,
+                        AnswersData.FOR_WHAT_QUESTION,
+                        AnswersData.FOR_WHAT_ANSWER,
+                        guidanceInstructions,
+                        cancellationToken)),
+                new OpenAIService.SelectItem(
+                    0,
                     AnswersData.HOW_MY_DATA_IS_STORED_QUESTION,
                     async _ => await AnswerQuestion(
                         update,

@@ -251,10 +251,6 @@ namespace CarInsuranceBot.Core.Constants
             Id - {6};
             Country code - {7};
             Category - {8}
-            Last name - {9};
-            First Name - {10};
-            Birth date - {11};
-            Expiry date - {12};
             """;
 
         #endregion ProcessDocumentsDataAction
@@ -360,6 +356,9 @@ namespace CarInsuranceBot.Core.Constants
         #endregion ProcessDataConfirmationAction
 
         #region Side questions Shared
+
+        public static readonly string FOR_WHAT_QUESTION = "Question: For what? For what you need my data?";
+        public static readonly string FOR_WHAT_ANSWER = "Answer: We need your data for car insurance ordering process";
 
         public static readonly string HOW_MY_DATA_IS_STORED_QUESTION = "Question: How my(user's) data is stored?";
         public static readonly string HOW_MY_DATA_IS_STORED_ANSWER = "Answer: Users data stored for short time and encrypted. It is disposed after processing?";
