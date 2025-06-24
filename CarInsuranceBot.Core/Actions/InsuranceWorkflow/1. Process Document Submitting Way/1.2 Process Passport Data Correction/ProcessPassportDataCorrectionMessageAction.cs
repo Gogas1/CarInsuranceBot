@@ -1,4 +1,5 @@
-﻿using CarInsuranceBot.Core.Cache;
+﻿using CarInsuranceBot.Core.Actions.InsuranceWorkflow;
+using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
 using CarInsuranceBot.Core.Models.Documents;
@@ -14,7 +15,7 @@ using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Passport;
 
-namespace CarInsuranceBot.Core.Actions.InsuranceWorkflow._1._Process_Document_Submitting_Way._1._2_Process_Passport_Data_Correction
+namespace CarInsuranceBot.Core.Actions.MessageActions
 {
     internal class ProcessPassportDataCorrectionMessageAction : DocumentCorrectionBaseAction<IdDocument>
     {

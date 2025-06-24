@@ -1,26 +1,28 @@
-﻿using CarInsuranceBot.Core.Actions.Abstractions;
+﻿using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Telegram.Bot;
-using Telegram.Bot.Types;
 
-namespace CarInsuranceBot.Core.Actions.InsuranceWorkflow._1._Process_Document_Submitting_Way._1._2_Process_Passport_Data_Correction
+namespace CarInsuranceBot.Core.Actions.CallbackQueryActions
 {
-    internal class ProcessPassportDataCorrectionCallbackQueryAction : CallbackQueryActionBase
+    internal class ProcessPassportDataCorrectionCallbackQueryAction : ProcessDataCorrectionCallbackQueryAction
     {
-
-
-        public ProcessPassportDataCorrectionCallbackQueryAction(UserService userService, ITelegramBotClient botClient) : base(userService, botClient)
+        public ProcessPassportDataCorrectionCallbackQueryAction(UserService userService, ITelegramBotClient botClient, OpenAIService openAiService) : base(userService, botClient, openAiService)
         {
+            
         }
 
-        protected override Task ProcessLogicAsync(CallbackQuery update, CancellationToken cancellationToken)
+        protected override UserState ExitState => UserState.PassportAwait;
+
+        protected override async Task<string> GetMessageAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            return await _openAiService.GetDiversifiedAnswer(AnswersData.SHARE_PASSPORT_IN_CHAT_GPT_SETTINGS, cancellationToken);
         }
     }
 }

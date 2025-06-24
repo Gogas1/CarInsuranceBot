@@ -64,8 +64,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 _documentsProvidedFormat,
                 data.idDocument.DocumentNumber,
                 data.idDocument.CountryCode,
-                data.idDocument.Surnames.First(),
-                data.idDocument.Names.First(),
+                data.idDocument.Surname,
+                data.idDocument.Name,
                 data.idDocument.BirthDate.ToString("yyyy.MM.dd"),
                 data.idDocument.ExpiryDate.ToString("yyyy.MM.dd"),
 

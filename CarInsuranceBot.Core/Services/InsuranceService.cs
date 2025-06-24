@@ -32,7 +32,7 @@ namespace CarInsuranceBot.Core.Services
             var documentModel = new InsuranceDocumentModel
             {
                 PolicyNumber = "PN12345",
-                InsuredName = $"{data.idDocument.Names.FirstOrDefault(string.Empty)} {data.idDocument.Surnames.FirstOrDefault(string.Empty)}",
+                InsuredName = $"{data.idDocument.Name} {data.idDocument.Surname}",
                 EffectiveDate = DateTime.Today,
                 ExpirationDate = DateTime.Today,
                 PremiumAmount = premium,

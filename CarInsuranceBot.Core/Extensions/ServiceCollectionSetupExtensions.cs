@@ -168,19 +168,23 @@ namespace CarInsuranceBot.Core.Extensions
         /// <returns>Passed <see cref="IServiceCollection"/> instance</returns>
         private static IServiceCollection AddActions(this IServiceCollection services)
         {
+            //Home
             services.AddTransient<DefaultMessageAction>();
             services.AddTransient<HandleHomeMessageAction>();
+
+            services.AddTransient<ProcessDocumentsSubmittingMessageAction>();
             services.AddTransient<PassportProcessingMessageAction>();
+            services.AddTransient<ProcessPassportDataCorrectionMessageAction>();
             services.AddTransient<ProcessPassportDataConfirmationMessageAction>();
             services.AddTransient<LicenseProcessingMessageAction>();
             services.AddTransient<ProcessVehicleIdDataConfirmationMessageAction>();
             services.AddTransient<ProcessVehicleIdDataCorrectionMessageAction>();
-            services.AddTransient<ProcessDocumentsSubmittingMessageAction>();
             services.AddTransient<ProcessDataConfirmationMessageAction>();
             services.AddTransient<PriceConfirmationMessageAction>();
 
             services.AddTransient<DefaultCallbackQueryAction>();
             services.AddTransient<HandleHomeCallbackQueryAction>();
+
             services.AddTransient<PassportProcessingCallbackQueryAction>();
             services.AddTransient<ProcessPassportDataConfirmationCallbackAction>();
             services.AddTransient<ProcessVehicleIdDataConfirmationCallbackAction>();
@@ -188,6 +192,8 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();
             services.AddTransient<ProcessSecondPriceConfirmationCallbackAction>();
+            services.AddTransient<ProcessPassportDataConfirmationCallbackAction>();
+            services.AddTransient<ProcessVehicleIdDataCorrectionCallbackQueryAction>();
 
             return services;
         }
@@ -214,7 +220,8 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.PassportDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessPassportDataConfirmationMessageAction>() },
                     { UserState.LicenseAwait, () => scopeFactory.GetAction<Message, LicenseProcessingMessageAction>() },
                     { UserState.LicenseDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessVehicleIdDataConfirmationMessageAction>() },
-                    { UserState.LicenseDataCorrectionAwait, () => scopeFactory.GetAction<Message, ProcessVehicleIdDataCorrectionMessageAction>() }
+                    { UserState.LicenseDataCorrectionAwait, () => scopeFactory.GetAction<Message, ProcessVehicleIdDataCorrectionMessageAction>() },
+                    { UserState.PassportDataCorrectionAwait, () => scopeFactory.GetAction<Message, ProcessPassportDataCorrectionMessageAction>() }
                 };
 
                 return new ActionsFactory<Message>(actions, () => scopeFactory.GetAction<Message, DefaultMessageAction>());
@@ -233,8 +240,8 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction>() },
                     { UserState.PassportDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPassportDataConfirmationCallbackAction>() },
                     { UserState.LicenseDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessVehicleIdDataConfirmationCallbackAction>() },
-                    //{ UserState.PassportAwait, () => scopeFactory.GetAction<CallbackQuery, PassportAwaitCallbackAction>() },
-                    //{ UserState.LicenseAwait, () => scopeFactory.GetAction<CallbackQuery, LicenseAwaitCallbackAction>() },
+                    { UserState.PassportDataCorrectionAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPassportDataCorrectionCallbackQueryAction>() },
+                    { UserState.LicenseDataCorrectionAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessVehicleIdDataCorrectionCallbackQueryAction>() }
                 };
 
                 return new ActionsFactory<CallbackQuery>(actions, () => scopeFactory.GetAction<CallbackQuery, DefaultCallbackQueryAction>());

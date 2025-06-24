@@ -74,7 +74,7 @@ namespace CarInsuranceBot.Core.Constants
             """;
 
         public static readonly string RESUBMIT_PHOTO_BUTTON_TEXT = "Resubmit photo";
-        public static readonly string RESUBMIT_PHOTO_BUTTON_DATA = "resubmit";
+        public const string RESUBMIT_PHOTO_BUTTON_DATA = "resubmit";
 
 
         public static readonly InlineKeyboardButton[] CORRECTNESS_PROCESSING_KEYBOARD = [

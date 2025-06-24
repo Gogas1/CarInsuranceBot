@@ -1,0 +1,25 @@
+﻿using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Enums;
+using CarInsuranceBot.Core.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Telegram.Bot;
+
+namespace CarInsuranceBot.Core.Actions.CallbackQueryActions;
+
+internal class ProcessVehicleIdDataCorrectionCallbackQueryAction : ProcessDataCorrectionCallbackQueryAction
+{
+    public ProcessVehicleIdDataCorrectionCallbackQueryAction(UserService userService, ITelegramBotClient botClient, OpenAIService openAiService) : base(userService, botClient, openAiService)
+    {
+    }
+
+    protected override UserState ExitState => UserState.LicenseAwait;
+
+    protected override async Task<string> GetMessageAsync(CancellationToken cancellationToken)
+    {
+        return await _openAiService.GetDiversifiedAnswer(AnswersData.SHARE_LICENSE_IN_CHAT_GPT_SETTINGS, cancellationToken);
+    }
+}
