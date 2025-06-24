@@ -24,9 +24,105 @@ namespace CarInsuranceBot.Core.Constants
             public string FallbackText { get; set; } = string.Empty;
         }
 
+        #region Home
+
+        //Guidance instruction
+        public static readonly string HOME_STATE_GUIDANCE = "Answer to the user they on this step need to select one of the available bot actions.";
+
+        #endregion Home
+
+        #region Insurance Workflow
+
+        #region 1. Process Document Submitting Way
+
+        public static readonly string SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT = "Good. Share your passport photo in chat";
+        public static readonly GPTTextSetting SHARE_PASSPORT_IN_CHAT_GPT_SETTINGS = new()
+        {
+            Stage = "Insurance workflow",
+            State = "need to provide passport photo",
+            Action = "User decided to share their documents via chat",
+            AnswerReq = "Write about need to share photo of their passport in chat",
+            FallbackText = SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT
+
+        };
+
+        public static string PASSPORT_DATA_TEMPLATE_TEXT = """
+            Validate extracted passport data and confirm if it is correct.
+            Number - {0};
+            Country code - {1};
+            Surname - {2};
+            Name - {3};
+            Birth date - {4};
+            Expiry date - {5}
+            """;
+
+        public static readonly string SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT = "Good. Share your vehicle Id document photo in chat";
+        public static readonly GPTTextSetting SHARE_LICENSE_IN_CHAT_GPT_SETTINGS = new()
+        {
+            Stage = "Insurance workflow",
+            State = "need to provide vehicle Id document photo",
+            Action = "User submitted passport photo and went to the next step",
+            AnswerReq = "Write about success of submitting passport photo and need to share photo of their vehicle Id document in chat",
+            FallbackText = SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT
+
+        };
+
+        public const string VEHICLE_ID_DATA_TEMPLATE_TEXT = """
+            Validate extracted vehicle Id document data and confirm if it is correct.
+            Registration Number - {0};
+            Registration Date - {1};
+            """;
+
+        public static readonly string RESUBMIT_PHOTO_BUTTON_TEXT = "Resubmit photo";
+        public static readonly string RESUBMIT_PHOTO_BUTTON_DATA = "resubmit";
+
+
+        public static readonly InlineKeyboardButton[] CORRECTNESS_PROCESSING_KEYBOARD = [
+            new InlineKeyboardButton(RESUBMIT_PHOTO_BUTTON_TEXT, RESUBMIT_PHOTO_BUTTON_DATA),
+            new InlineKeyboardButton(STOP_WORKFLOW_BUTTON_TEXT, STOP_WORKFLOW_BUTTON_DATA),
+            ];
+
+        #endregion 1. Process Document Submitting Way
+
+        #region Insurance Workflow Shared
+
+        // Text for user reconsideration about ordering an insurance
+        public static readonly string USER_RECONSIDERED_ANSWER_TEXT = "Got it. Returning to the start.";
+
+        public static readonly string AUTHORIZATION_DECLINE_BUTTON_TEXT = "I have reconsidered this";
+        public static readonly string AUTHORIZATION_DECLINE_BUTTON_DATA = "decline";
+
+        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT = "Share via chat";
+        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_DATA = "share_in_chat";
+
+        public static readonly string SHARE_DOCUMENTS_BUTTON_TEXT = "Share via Telegram Passport";
+        public static readonly string REDIRECT_URL = "https://gogas1.github.io/CarInsuranceBot/redirect.html?{0}";
+
+        #endregion Insurance Workflow Shared
+
+        #region Guidance
+
+
+        //Passport await guidance instuctions
+        public static readonly string PASSPORT_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their passport.";
+
+        //Vehicle Id document await guidance instuctions
+        public static readonly string LICENSE_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their vehicle Id document.";
+
+        //Submitting await guidance instuctions
+        public static readonly string DOCUMENTS_AWAIT_STATE_GUIDANCE = "Answer to the user they need use Telegram Passport or choose to share documents via chat to proceed.";
+
+        //Data confirmation await guidance instuctions
+        public static readonly string DATA_CONFIRMATION_AWAIT_STATE_GUIDANCE = "Answer to the user they need to confirm or deconfirm provided data corectness.";
+
+
+        #endregion Guidance
+
+        #endregion Insurance Workflow
+
 
         #region HelloMessageAction
-                
+
         //Fallback text for the welcoming message
         public static readonly string HELLO_MESSAGE_FALLBACK_TEXT = "Hello. I am a car insurance bot. I can assist you with car insurance purchases";
         public static readonly GPTTextSetting HELLO_MESSAGE_SETTINGS = new()
@@ -39,15 +135,6 @@ namespace CarInsuranceBot.Core.Constants
         };
 
         #endregion HelloMessageAction
-
-
-        #region ProcessReconsiderationAction
-
-        // Text for user reconsideration about ordering an insurance
-        public static readonly string USER_RECONSIDERED_ANSWER_TEXT = "Got it. Returning to the start.";
-
-        #endregion ProcessReconsiderationAction
-
 
         #region BusyHandlingAction
 
@@ -106,42 +193,13 @@ namespace CarInsuranceBot.Core.Constants
 
         #region Authorization Shared
 
-        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_TEXT = "Share via chat";
-        public static readonly string SHARE_DOCUMENTS_IN_CHAT_BUTTON_DATA = "share_in_chat";
 
-        public static readonly string AUTHORIZATION_DECLINE_BUTTON_TEXT = "I have reconsidered this";
-        public static readonly string AUTHORIZATION_DECLINE_BUTTON_DATA = "decline";
-
-        public static readonly string SHARE_DOCUMENTS_BUTTON_TEXT = "Share via Telegram Passport";
-        public static readonly string REDIRECT_URL = "https://gogas1.github.io/CarInsuranceBot/redirect.html?{0}";
-
-        public static readonly string SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT = "Good. Share your passport photo in chat";
-        public static readonly GPTTextSetting SHARE_PASSPORT_IN_CHAT_GPT_SETTINGS = new()
-        {
-            Stage = "Insurance workflow",
-            State = "need to provide passport photo",
-            Action = "User decided to share their documents via chat",
-            AnswerReq = "Write about need to share photo of their passport in chat",
-            FallbackText = SHARE_PASSPORT_IN_CHAT_FALLBACK_TEXT
-
-        };
-
-        public static readonly string SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT = "Good. Share your driving license photo in chat";
-        public static readonly GPTTextSetting SHARE_LICENSE_IN_CHAT_GPT_SETTINGS = new()
-        {
-            Stage = "Insurance workflow",
-            State = "need to provide driving license photo",
-            Action = "User submitted passport photo and went to the next step",
-            AnswerReq = "Write about success of submitting passport photo and need to share photo of their driving license in chat",
-            FallbackText = SHARE_LICENSE_IN_CHAT_FALLBACK_TEXT
-
-        };
 
         public static readonly string INSURANCE_ORDERING_DOCUMENTS_IN_CHAT_OPTION = "User want to proceed documents processing using chat. Want to share documents in chat";
         public static readonly string INSURANCE_ORDERING_RECONSIDERATION_OPTION = "User don't want to proceed with insurance. Want go back to the home state. Decline the workflow.";
 
-        public static readonly string STOP_WORKFLOW_BUTTON_TEXT = "Back to home";
-        public static readonly string STOP_WORKFLOW_BUTTON_DATA = "workflow_stop";
+        public const string STOP_WORKFLOW_BUTTON_TEXT = "Back to home";
+        public const string STOP_WORKFLOW_BUTTON_DATA = "workflow_stop";
         public static InlineKeyboardButton[] STOP_WORKFLOW_KEYBOARD = [
             new InlineKeyboardButton(STOP_WORKFLOW_BUTTON_TEXT, STOP_WORKFLOW_BUTTON_DATA)
             ];
@@ -233,7 +291,7 @@ namespace CarInsuranceBot.Core.Constants
             Stage = "Documents processing",
             State = "application failed to get data from the data extraction api",
             Action = "Application has received answer from the data extraction api, but it failed to extract info from some of the documents",
-            AnswerReq = "Write we have failed to extract data from some of the user's document, so user need to try again and be sure they submit correct document",
+            AnswerReq = "Write we have failed to extract data from some of the user's document, so user need to try again and be sure they submit correct document OR proceed to input missing fields manually.",
             FallbackText = NO_DOCUMENT_DATA_FALLBACK_TEXT,
         };
 
@@ -248,36 +306,27 @@ namespace CarInsuranceBot.Core.Constants
             Birth date - {4};
             Expiry date - {5};
             Driving license:
-            Id - {6};
-            Country code - {7};
-            Category - {8}
+            Registration Number - {6};
+            Registration Date - {7};
             """;
 
         #endregion ProcessDocumentsDataAction   
 
         #region PassportProcessingShared
 
-        public static string PASSPORT_DATA_TEMPLATE_TEXT = """
-            Validate extracted passport data and confirm if it is correct.
-            Number - {0};
-            Country code - {1};
-            Surname - {2};
-            Name - {3};
-            Birth date - {4};
-            Expiry date - {5}
-            """;
+        
 
         #endregion PassportProcessingShared
 
         #region Data confirmation shared
 
         //Data confirmation keyboard buttons content
-        public static readonly string NO_CONCRETE_ANSWER_FALLBACK_TEXT = "You did not provide concrete answer. For more direct workflow, please use message keyboard buttons";
+        public const string NO_CONCRETE_ANSWER_FALLBACK_TEXT = "You did not provide concrete answer. For more direct workflow, please use message keyboard buttons";
 
-        public static readonly string DATA_CONFIRMATION_BUTTON_TEXT = "Yes, I confirm";
-        public static readonly string DATA_DECLINE_BUTTON_TEXT = "No, data is incorrect";
-        public static readonly string DATA_CONFIRMATION_BUTTON_DATA = "yes";
-        public static readonly string DATA_DECLINE_BUTTON_DATA = "no";
+        public const string DATA_CONFIRMATION_BUTTON_TEXT = "Yes, I confirm";
+        public const string DATA_DECLINE_BUTTON_TEXT = "No, data is incorrect";
+        public const string DATA_CONFIRMATION_BUTTON_DATA = "yes";
+        public const string DATA_DECLINE_BUTTON_DATA = "no";
 
         // Data confirmation keyboard
         public static readonly InlineKeyboardButton[][] DATA_CONFIRMATION_KEYBOARD = [
@@ -406,25 +455,6 @@ namespace CarInsuranceBot.Core.Constants
         public static readonly string I_DONT_WANT_TO_GIVE_DATA_QUESTION = "Question: What if I don't want to share my private data?";
         public static readonly string I_DONT_WANT_TO_GIVE_DATA_ANSWER = "Answer: Tell we are sorry, but we need to get access to your data for the service we provide. User data is secured during the process.";
 
-        #endregion Side questions Shared
-
-        #region Guidance answers
-
-        //DefaultHomeMessage
-        public static readonly string HOME_STATE_GUIDANCE = "Answer to the user they on this step need to select one of the available bot actions.";
-
-        //PassportProcessingMessageAction
-        public static readonly string PASSPORT_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their passport.";
-
-        //LicenseProcessingMessageAction
-        public static readonly string LICENSE_AWAIT_STATE_GUIDANCE = "Answer to the user they need to submit photo of their driving license.";
-
-        //ProcessDocumentsDataAction
-        public static readonly string DOCUMENTS_AWAIT_STATE_GUIDANCE = "Answer to the user they need use Telegram Passport or choose to share documents via chat to proceed.";
-
-        //ProcessDataConfirmationMessageAction
-        public static readonly string DATA_CONFIRMATION_AWAIT_STATE_GUIDANCE = "Answer to the user they need to confirm or deconfirm provided data corectness.";
-
-        #endregion Guidance answers        
+        #endregion Side questions Shared       
     }
 }

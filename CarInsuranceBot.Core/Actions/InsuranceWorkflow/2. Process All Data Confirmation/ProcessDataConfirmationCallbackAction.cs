@@ -1,6 +1,7 @@
 ﻿using CarInsuranceBot.Core.Actions.Abstractions;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Constants;
+using CarInsuranceBot.Core.Enums;
 using CarInsuranceBot.Core.Services;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
@@ -41,34 +42,40 @@ namespace CarInsuranceBot.Core.Actions.CallbackQueryActions
                 return;
             }
 
-            // If callback query contains agreement data
-            if (data == AnswersData.DATA_CONFIRMATION_BUTTON_DATA)
+            switch(data)
             {
-                // Send message about the next step - price agreement text and keyboard
-                await _botClient.SendMessage(
+                // If callback query contains agreement data
+                case AnswersData.DATA_CONFIRMATION_BUTTON_DATA:
+                    // Send message about the next step - price agreement text and keyboard
+                    await _botClient.SendMessage(
+                        update.From.Id,
+                        await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_CONFIRMED_SETTINGS, cancellationToken),
+                        replyMarkup: AnswersData.PRICE_CONFIRMATION_KEYBOARD,
+                        cancellationToken: cancellationToken);
+                    // Change user state
+                    await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceConfirmationAwait, update.From.Id, cancellationToken);
+                    return;
+                // If callback query contains decline data
+                case AnswersData.DATA_DECLINE_BUTTON_DATA:
+                    // Create and set new nonce
+                    var newNonce = _documentsService.SetNonceForUser(update.From.Id);
+
+                    // Send message about resubmitting the documents and authorization keyboard
+                    await _botClient.SendMessage(
+                        update.From.Id,
+                        await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_DECLINED_SETTINGS, cancellationToken),
+                        replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce));
+                    // Change user state
+                    await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
+                    return;
+                case AnswersData.STOP_WORKFLOW_BUTTON_DATA:
+                    await _botClient.SendMessage(
                     update.From.Id,
-                    await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_CONFIRMED_SETTINGS, cancellationToken),
-                    replyMarkup: AnswersData.PRICE_CONFIRMATION_KEYBOARD,
+                    AnswersData.USER_RECONSIDERED_ANSWER_TEXT,
+                    replyMarkup: AnswersData.HOME_KEYBOARD,
                     cancellationToken: cancellationToken);
-                // Change user state
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PriceConfirmationAwait, update.From.Id, cancellationToken);
-                return;
-            }
-
-            // If callback query contains decline data
-            if (data == AnswersData.DATA_DECLINE_BUTTON_DATA)
-            {
-                // Create and set new nonce
-                var newNonce = _documentsService.SetNonceForUser(update.From.Id);
-
-                // Send message about resubmitting the documents and authorization keyboard
-                await _botClient.SendMessage(
-                    update.From.Id,
-                    await _openAIService.GetDiversifiedAnswer(AnswersData.DATA_DECLINED_SETTINGS, cancellationToken),
-                    replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce));
-                // Change user state
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
-                return;
+                        await _userService.SetUserStateByTelegramIdAsync(UserState.Home, update.From.Id, cancellationToken);
+                    return;
             }
         }
     }

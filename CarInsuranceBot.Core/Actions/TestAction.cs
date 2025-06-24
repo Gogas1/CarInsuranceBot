@@ -8,11 +8,11 @@ using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace CarInsuranceBot.Core.Actions.MessageActions.PassportDataCorrectionAwait
+namespace CarInsuranceBot.Core.Actions
 {
-    internal class ProcessPassportDataCorrectionMessageAction : MessageActionBase
+    internal class TestAction : MessageActionBase
     {
-        public ProcessPassportDataCorrectionMessageAction(UserService userService, ITelegramBotClient botClient) : base(userService, botClient)
+        public TestAction(UserService userService, ITelegramBotClient botClient) : base(userService, botClient)
         {
         }
 

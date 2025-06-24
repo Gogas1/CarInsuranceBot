@@ -2,6 +2,7 @@
 using CarInsuranceBot.Core.Actions.CallbackQueryActions;
 using CarInsuranceBot.Core.Actions.DefaultActions;
 using CarInsuranceBot.Core.Actions.MessageActions;
+using CarInsuranceBot.Core.Actions.MessageActions.PassportDataConfirmationAwait;
 using CarInsuranceBot.Core.Cache;
 using CarInsuranceBot.Core.Configuration;
 using CarInsuranceBot.Core.Enums;
@@ -155,6 +156,7 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddScoped<InsuranceService>();
             services.AddScoped<PdfService>();
             services.AddScoped<OpenAIService>();
+            services.AddScoped<TestService>();
 
             return services;
         }
@@ -168,20 +170,24 @@ namespace CarInsuranceBot.Core.Extensions
         {
             services.AddTransient<DefaultMessageAction>();
             services.AddTransient<HandleHomeMessageAction>();
+            services.AddTransient<PassportProcessingMessageAction>();
+            services.AddTransient<ProcessPassportDataConfirmationMessageAction>();
+            services.AddTransient<LicenseProcessingMessageAction>();
+            services.AddTransient<ProcessVehicleIdDataConfirmationMessageAction>();
+            services.AddTransient<ProcessVehicleIdDataCorrectionMessageAction>();
             services.AddTransient<ProcessDocumentsSubmittingMessageAction>();
             services.AddTransient<ProcessDataConfirmationMessageAction>();
-            services.AddTransient<PassportProcessingMessageAction>();
-            services.AddTransient<LicenseProcessingMessageAction>();
             services.AddTransient<PriceConfirmationMessageAction>();
 
             services.AddTransient<DefaultCallbackQueryAction>();
-            services.AddTransient<ProcessDocumentsSubmittingCallbackQueryAction>();
             services.AddTransient<HandleHomeCallbackQueryAction>();
+            services.AddTransient<PassportProcessingCallbackQueryAction>();
+            services.AddTransient<ProcessPassportDataConfirmationCallbackAction>();
+            services.AddTransient<ProcessVehicleIdDataConfirmationCallbackAction>();
+            services.AddTransient<ProcessDocumentsSubmittingCallbackQueryAction>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();
             services.AddTransient<ProcessSecondPriceConfirmationCallbackAction>();
-            services.AddTransient<PassportProcessingCallbackQueryAction>();
-            services.AddTransient<LicenseAwaitCallbackAction>();
 
             return services;
         }
@@ -205,7 +211,10 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
                     { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<Message, PriceConfirmationMessageAction>() },
                     { UserState.PassportAwait, () => scopeFactory.GetAction<Message, PassportProcessingMessageAction>() },
+                    { UserState.PassportDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessPassportDataConfirmationMessageAction>() },
                     { UserState.LicenseAwait, () => scopeFactory.GetAction<Message, LicenseProcessingMessageAction>() },
+                    { UserState.LicenseDataConfirmationAwait, () => scopeFactory.GetAction<Message, ProcessVehicleIdDataConfirmationMessageAction>() },
+                    { UserState.LicenseDataCorrectionAwait, () => scopeFactory.GetAction<Message, ProcessVehicleIdDataCorrectionMessageAction>() }
                 };
 
                 return new ActionsFactory<Message>(actions, () => scopeFactory.GetAction<Message, DefaultMessageAction>());
@@ -221,7 +230,9 @@ namespace CarInsuranceBot.Core.Extensions
                     { UserState.DocumentsAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDocumentsSubmittingCallbackQueryAction>() },
                     { UserState.DocumentsDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessDataConfirmationCallbackAction>() },
                     { UserState.PriceConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPriceConfirmationCallbackAction>() },
-                    { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction >() },
+                    { UserState.PriceSecondConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessSecondPriceConfirmationCallbackAction>() },
+                    { UserState.PassportDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessPassportDataConfirmationCallbackAction>() },
+                    { UserState.LicenseDataConfirmationAwait, () => scopeFactory.GetAction<CallbackQuery, ProcessVehicleIdDataConfirmationCallbackAction>() },
                     //{ UserState.PassportAwait, () => scopeFactory.GetAction<CallbackQuery, PassportAwaitCallbackAction>() },
                     //{ UserState.LicenseAwait, () => scopeFactory.GetAction<CallbackQuery, LicenseAwaitCallbackAction>() },
                 };

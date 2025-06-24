@@ -9,6 +9,7 @@ using Mindee;
 using Mindee.Product.InternationalId;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,7 +23,9 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
     {
         private SecretCache _secretCache;
 
-        protected override TimeSpan Timeout => TimeSpan.FromHours(1);
+
+        private static readonly CompositeFormat _passportDataFormat =
+       CompositeFormat.Parse(AnswersData.PASSPORT_DATA_TEMPLATE_TEXT);
 
         public PassportProcessingMessageAction(
             UserService userService,
@@ -64,20 +67,34 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 return;
             }
 
-            var idKey = await _secretCache.StoreAsync(idDocumentData, TimeSpan.FromMinutes(30));
+            var documentCacheKey = await _secretCache.StoreAsync(idDocumentData, TimeSpan.FromMinutes(30));
 
             await _userService.SetUserInputStateAsync(update.From.Id, uis =>
             {
-                uis.CreateInsuranceFlow.IdCacheKey = idKey;
+                uis.CreateInsuranceFlow.IdCacheKey = documentCacheKey;
             }, cancellationToken);
+
+            if(!idDocumentData.IsValid())
+            {
+                await OnExtractionError(update, idDocumentData, cancellationToken);
+                return;
+            }
 
             await _botClient.SendMessage(
                 update.Chat,
-                await _openAiService.GetDiversifiedAnswer(AnswersData.SHARE_LICENSE_IN_CHAT_GPT_SETTINGS, cancellationToken),
-                replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD,
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    _passportDataFormat,
+                    idDocumentData.DocumentNumber,
+                    idDocumentData.CountryCode,
+                    idDocumentData.Surname,
+                    idDocumentData.Name,
+                    idDocumentData.BirthDate.ToString("yyyy.MM.dd"),
+                    idDocumentData.ExpiryDate.ToString("yyyy.MM.dd")),
+                replyMarkup: AnswersData.DATA_CONFIRMATION_KEYBOARD,
                 cancellationToken: cancellationToken);
 
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.LicenseAwait, update.From.Id, cancellationToken);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PassportDataConfirmationAwait, update.From.Id, cancellationToken);
         }
 
         private async Task<IdDocument?> ProcessDocument(Message update, CancellationToken cancellationToken)
@@ -107,16 +124,41 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 {
                     DocumentNumber = document.Prediction.DocumentNumber.Value,
                     CountryCode = document.Prediction.CountryOfIssue.Value,
-                    Surnames = document.Prediction.Surnames.Select(s => s.Value).ToList(),
-                    Names = document.Prediction.GivenNames.Select(n => n.Value).ToList(),
+                    Surname = document.Prediction.Surnames.Select(s => s.Value).FirstOrDefault() ?? string.Empty,
+                    Name = document.Prediction.GivenNames.Select(n => n.Value).FirstOrDefault() ?? string.Empty,
                     BirthDate = document.Prediction.BirthDate.DateObject ?? DateTime.MinValue,
                     ExpiryDate = document.Prediction.ExpiryDate.DateObject ?? DateTime.MinValue,
                 },
-                d => d?.IsValid() ?? false,
-                async _ => await OnExtractionError(update, await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken), cancellationToken),
-                async _ => await OnExtractionError(update, await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken), cancellationToken),
+                async _ => await OnExtractionError(update, null, cancellationToken),
+                async doc => await OnExtractionError(update, doc, cancellationToken),
                 cancellationToken
                 );
+        }
+
+        protected async Task OnExtractionError(Message update, IdDocument? document, CancellationToken cancellationToken) {
+            if(update.From == null)
+            {
+                return;
+            }
+
+            document ??= new IdDocument();
+            var idKey = await _secretCache.StoreAsync(document, TimeSpan.FromMinutes(30));
+
+            await _userService.SetUserInputStateAsync(update.From.Id, uis =>
+            {
+                uis.CreateInsuranceFlow.IdCacheKey = idKey;
+            }, cancellationToken);
+
+            var invalidations = document.GetInvalidFieldsHandlers();
+            var firstInvalidation = invalidations.First();
+
+            await _botClient.SendMessage(
+                update.Chat,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
+                replyMarkup: AnswersData.CORRECTNESS_PROCESSING_KEYBOARD,
+                cancellationToken: cancellationToken);
+            await _botClient.SendMessage(update.Chat, $"You need to fill up the \"{firstInvalidation.Name}\" field first");
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PassportDataCorrectionAwait, update.From.Id, cancellationToken);
         }
     }
 }

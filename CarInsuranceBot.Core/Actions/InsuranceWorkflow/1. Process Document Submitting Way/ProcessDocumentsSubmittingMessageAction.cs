@@ -189,8 +189,8 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 {
                     DocumentNumber = document.Prediction.DocumentNumber.Value,
                     CountryCode = document.Prediction.CountryOfIssue.Value,
-                    Surnames = document.Prediction.Surnames.Select(s => s.Value).ToList(),
-                    Names = document.Prediction.GivenNames.Select(n => n.Value).ToList(),
+                    Surname = document.Prediction.Surnames.Select(s => s.Value).FirstOrDefault() ?? string.Empty,
+                    Name = document.Prediction.GivenNames.Select(n => n.Value).FirstOrDefault() ?? string.Empty,
                     BirthDate = document.Prediction.BirthDate.DateObject ?? DateTime.MinValue,
                     ExpiryDate = document.Prediction.ExpiryDate.DateObject ?? DateTime.MinValue,
                 },
@@ -213,13 +213,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 // Pass DriverLicenseDocument factory based on Mindee document
                 document => new DriverLicenseDocument
                 {
-                    CountryCode = document.Prediction.CountryCode.Value,
-                    Id = document.Prediction.Id.Value,
-                    Category = document.Prediction.Category.Value,
-                    LastName = document.Prediction.LastName.Value,
-                    FirstName = document.Prediction.FirstName.Value,
-                    ExpiryDate = document.Prediction.ExpiryDate.DateObject ?? DateTime.MinValue,
-                    BirthDate = document.Prediction.DateOfBirth.DateObject ?? DateTime.MinValue,
+                    
                 },
                 // Pass validation function
                 d => true,
@@ -264,18 +258,13 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 _documentsProvidedFormat,
                 idDoc.DocumentNumber,
                 idDoc.CountryCode,
-                idDoc.Surnames.First(),
-                idDoc.Names.First(),
+                idDoc.Surname,
+                idDoc.Name,
                 idDoc.BirthDate.ToString("yyyy.MM.dd"),
                 idDoc.ExpiryDate.ToString("yyyy.MM.dd"),
 
-                dlDoc.Id,
-                dlDoc.CountryCode,
-                dlDoc.Category,
-                dlDoc.LastName,
-                dlDoc.FirstName,
-                dlDoc.BirthDate.ToString("yyyy.MM.dd"),
-                dlDoc.ExpiryDate.ToString("yyyy.MM.dd")
+                dlDoc.RegistrationNumber,
+                dlDoc.RegistrationDate.ToString("yyyy.MM.dd")
             );
 
             // Store user input data - cache keys

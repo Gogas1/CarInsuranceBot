@@ -33,7 +33,6 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
             long userId,
             string fileName,
             Func<TMindeeDocument, TDocument?> mappingFunction,
-            Func<TDocument?, bool> validationFunction,
             Action<int> onErrorStatus,
             Action<TDocument?> onInvalidation,
             CancellationToken cancellationToken) where TMindeeDocument : class, new() where TDocument : class, new()
@@ -50,13 +49,6 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
                 if (response.ApiRequest.StatusCode != 200)
                 {
                     onErrorStatus(response.ApiRequest.StatusCode);
-                    return null;
-                }
-
-                // Handle invalidation
-                if (!validationFunction(doc))
-                {
-                    onInvalidation(doc);
                     return null;
                 }
 
@@ -99,15 +91,6 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
         protected async Task OnNoPhoto(Message update, string message, CancellationToken cancellationToken)
         {
             await _botClient.SendMessage(update.Chat, message, replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD, cancellationToken: cancellationToken);
-        }
-
-        protected async Task OnExtractionError(Message update, string message, CancellationToken cancellationToken)
-        {
-            await _botClient.SendMessage(
-                update.Chat,
-                message,
-                replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD,
-                cancellationToken: cancellationToken);
         }
     }
 }

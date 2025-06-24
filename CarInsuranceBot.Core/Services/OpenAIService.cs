@@ -49,6 +49,11 @@ namespace CarInsuranceBot.Core.Services
             DO NOT OUTPUT ANYTHING ELSE
             """;
 
+        private readonly string DETECT_VALUE_SYSTEM_MESSAGE = """
+            You assistant with the goal to get specific field value from the user input. You need to analyze user input and use your tool to provide system with the value from the user input.
+            You are supplied with the field name, based on it determine value format. If user input does not contains value, do not use the tool
+            """;
+
         //private readonly string TRUE_FALSE_SYSTEM_MESSAGE = """
         //    You assistant with the goal to process user input and determine whether the user agrees or confirms the topic. The topic context: {0}
         //    At every turn
@@ -158,6 +163,32 @@ namespace CarInsuranceBot.Core.Services
 
             var response = await _chatClient.GetResponseAsync([system, user], chatOptions, cancellationToken);
             return select ?? defaultOption;
+        }
+
+        public async Task<TOutput?> GetValueFromInput<TOutput>(string valueName, string valueType, string userText, CancellationToken cancellationToken)
+        {
+            TOutput? value = default;
+
+            var system = new ChatMessage(ChatRole.System, DETECT_VALUE_SYSTEM_MESSAGE);
+            var user = new ChatMessage(ChatRole.User, userText);
+
+            var chatOptions = new ChatOptions
+            {
+                //Set up the tool
+                ToolMode = ChatToolMode.Auto,
+                //Create a tool to process feedback from GPT about value
+                Tools = [AIFunctionFactory.Create((TOutput parsedValue) => {
+                    value = parsedValue;
+                },
+                "get_input_value",
+                "Get value from the user input")],
+                Temperature = 0,
+                MaxOutputTokens = 200
+            };
+
+            var response = await _chatClient.GetResponseAsync([system, user], chatOptions, cancellationToken);
+
+            return value;
         }
 
         public async Task<string> GetAnswerAsync(string input, string quest, string answer, CancellationToken cancellationToken, string followingText = "")

@@ -17,6 +17,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.Passport;
 
 namespace CarInsuranceBot.Core.Actions.MessageActions
 {
@@ -25,6 +26,9 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
         private SecretCache _secretCache;
         private DocumentsService _documentsService;
         private BotConfiguration _botConfig;
+
+        private static readonly CompositeFormat _vehicleIdDataFormat =
+       CompositeFormat.Parse(AnswersData.VEHICLE_ID_DATA_TEMPLATE_TEXT);
 
         public LicenseProcessingMessageAction(
             UserService userService,
@@ -39,8 +43,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
             _documentsService = documentsService;
             _botConfig = botConfig.Value;
         }
-        private static readonly CompositeFormat _documentsProvidedFormat =
-        CompositeFormat.Parse(AnswersData.DOCUMENTS_PROVIDED_TEXT);
+
         protected override async Task ProcessLogicAsync(Message update, CancellationToken cancellationToken)
         {
             if (update.From == null)
@@ -78,42 +81,17 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 uis.CreateInsuranceFlow.DriverLicenseCacheKey = driverLicenseKey;
             }, cancellationToken);
 
-            var data = await _documentsService.GetDataForUserAsync(update.From.Id, cancellationToken);
-
-            if(data == null)
+            if (!driverLicenseData.IsValid())
             {
-                // Create and set new nonce
-                var newNonce = _documentsService.SetNonceForUser(update.From.Id);
-
-                //Send message about failure with the authorization keyboard
-                await _botClient.SendMessage(
-                    update.From.Id,
-                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_STORED_DOCUMENTS_SETTINGS, cancellationToken),
-                    replyMarkup: AnswersData.GetAuthorizationKeyboard(_botClient, _botConfig, newNonce),
-                    cancellationToken: cancellationToken);
-
-                // Change state
-                await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsAwait, update.From.Id, cancellationToken);
+                await OnExtractionError(update, driverLicenseData, cancellationToken);
                 return;
             }
 
             var message = string.Format(
                 CultureInfo.InvariantCulture,
-                _documentsProvidedFormat,
-                data.idDocument.DocumentNumber,
-                data.idDocument.CountryCode,
-                data.idDocument.Surnames.First(),
-                data.idDocument.Names.First(),
-                data.idDocument.BirthDate.ToString("yyyy.MM.dd"),
-                data.idDocument.ExpiryDate.ToString("yyyy.MM.dd"),
-
-                data.DriverLicenseDocument.Id,
-                data.DriverLicenseDocument.CountryCode,
-                data.DriverLicenseDocument.Category,
-                data.DriverLicenseDocument.LastName,
-                data.DriverLicenseDocument.FirstName,
-                data.DriverLicenseDocument.BirthDate.ToString("yyyy.MM.dd"),
-                data.DriverLicenseDocument.ExpiryDate.ToString("yyyy.MM.dd")
+                _vehicleIdDataFormat,
+                driverLicenseData.RegistrationNumber,
+                driverLicenseData.RegistrationDate.ToString("yyyy.MM.dd")
             );
 
             await _botClient.SendMessage(
@@ -123,7 +101,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 cancellationToken: cancellationToken);
 
             // Change user state
-            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.DocumentsDataConfirmationAwait, update.From.Id, cancellationToken);
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.LicenseDataConfirmationAwait, update.From.Id, cancellationToken);
         }
 
         private async Task<DriverLicenseDocument?> ProcessDocument(Message update, CancellationToken cancellationToken)
@@ -151,27 +129,46 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 "passport.jpg",
                 document => new DriverLicenseDocument
                 {
-                    CountryCode = document.Prediction.CountryCode.Value,
-                    Id = document.Prediction.Id.Value,
-                    Category = document.Prediction.Category.Value,
-                    LastName = document.Prediction.LastName.Value,
-                    FirstName = document.Prediction.FirstName.Value,
-                    ExpiryDate = document.Prediction.ExpiryDate.DateObject ?? DateTime.MinValue,
-                    BirthDate = document.Prediction.DateOfBirth.DateObject ?? DateTime.MinValue,
+                    RegistrationNumber = document.Prediction.Id.Value,
+                    RegistrationDate = document.Prediction.IssuedDate.DateObject ?? DateTime.MinValue,
                 },
-                // Pass validation function
-                d => true,
                 async _ => await OnExtractionError(
                     update,
-                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
+                    null,
                     cancellationToken),
-                async _ => await OnExtractionError(
+                async doc => await OnExtractionError(
                     update,
-                    await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
+                    doc,
                     cancellationToken),
                 cancellationToken
                 );
         }
 
+        protected async Task OnExtractionError(Message update, DriverLicenseDocument? document, CancellationToken cancellationToken)
+        {
+            if (update.From == null)
+            {
+                return;
+            }
+
+            document ??= new DriverLicenseDocument();
+            var idKey = await _secretCache.StoreAsync(document, TimeSpan.FromMinutes(30));
+
+            await _userService.SetUserInputStateAsync(update.From.Id, uis =>
+            {
+                uis.CreateInsuranceFlow.DriverLicenseCacheKey = idKey;
+            }, cancellationToken);
+
+            var invalidations = document.GetInvalidFieldsHandlers();
+            var firstInvalidation = invalidations.First();
+
+            await _botClient.SendMessage(
+                update.Chat,
+                await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
+                replyMarkup: AnswersData.CORRECTNESS_PROCESSING_KEYBOARD,
+                cancellationToken: cancellationToken);
+            await _botClient.SendMessage(update.Chat, $"You need to fill up the \"{firstInvalidation.Name}\" field first");
+            await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.LicenseDataCorrectionAwait, update.From.Id, cancellationToken);
+        }
     }
 }
