@@ -13,6 +13,9 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace CarInsuranceBot.Core.Actions.Abstractions
 {
+    /// <summary>
+    /// Provides base for actions with ability to answer side questions
+    /// </summary>
     internal abstract class GeneralInformationalMessageAction : MessageActionBase
     {
         protected OpenAIService _openAiService;
@@ -31,6 +34,14 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
             _openAiService = openAiService;
         }       
 
+        /// <summary>
+        /// Provides an option list of questions and answers
+        /// </summary>
+        /// <param name="update">Telegram update of the action</param>
+        /// <param name="guidanceInstructions">Guidance instuction for user what to do next</param>
+        /// <param name="replyMarkup">Answer reply markup</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns></returns>
         protected List<OpenAIService.SelectItem> CreateBaseQuestionsOptionsList(Message update, string guidanceInstructions, ReplyMarkup? replyMarkup = null, CancellationToken cancellationToken = default)
         {
             this.guidanceInstructions = guidanceInstructions;
@@ -119,6 +130,16 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
                         cancellationToken))];
         }
 
+        /// <summary>
+        /// Makes request to the OpenAI API to get answer
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="input"></param>
+        /// <param name="question"></param>
+        /// <param name="answer"></param>
+        /// <param name="guidanceInstructions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         private async Task AnswerQuestion(Message update, string? input, string question, string answer, string guidanceInstructions, CancellationToken cancellationToken)
         {
             if(string.IsNullOrEmpty(input))

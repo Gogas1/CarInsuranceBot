@@ -9,6 +9,11 @@ namespace CarInsuranceBot.Core.Actions.DefaultActions
 {
     internal class DefaultCallbackQueryAction : CallbackQueryActionBase
     {
+        /// <summary>
+        /// Default action for Callback Query type updates. Handles workflow stop
+        /// </summary>
+        /// <param name="userService"></param>
+        /// <param name="botClient"></param>
         public DefaultCallbackQueryAction(UserService userService, ITelegramBotClient botClient) : base(userService, botClient)
         {
         }

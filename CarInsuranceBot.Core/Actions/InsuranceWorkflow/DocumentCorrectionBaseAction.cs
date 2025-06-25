@@ -44,17 +44,17 @@ namespace CarInsuranceBot.Core.Actions.InsuranceWorkflow
                 return;
             }
 
-            var vehicleDocument = await RetreiveDocument(update, cancellationToken);
-            if (vehicleDocument == null)
+            var document = await RetreiveDocument(update, cancellationToken);
+            if (document == null)
             {
                 await OnNoDocuments(update, cancellationToken);
                 return;
             }
 
-            var invalidations = GetInvalidations(vehicleDocument);
+            var invalidations = GetInvalidations(document);
             if (invalidations.Count == 0)
             {
-                await OnNoInvalidations(update, vehicleDocument, cancellationToken);
+                await OnNoInvalidations(update, document, cancellationToken);
                 return;
             }
 
@@ -62,21 +62,19 @@ namespace CarInsuranceBot.Core.Actions.InsuranceWorkflow
             var value = await _openAiService.GetValueFromInput<string>(firstInvalidation.Name, "string", update.Text, cancellationToken);
             if (!firstInvalidation.ValueHandler(value))
             {
-                await _botClient.SendMessage(update.Chat, $"You didn't provide value for this field. \nYou need to fill up the \"{firstInvalidation.Name}\" field next");
+                await _botClient.SendMessage(update.Chat, $"You didn't provide value for this field. \nYou need to fill up the \"{firstInvalidation.Name}\" field");
+                return;
             }
 
-            var driverLicenseKey = await _secretCache.StoreAsync(vehicleDocument, TimeSpan.FromMinutes(30));
-            await _userService.SetUserInputStateAsync(update.From.Id, uis =>
-            {
-                uis.CreateInsuranceFlow.DriverLicenseCacheKey = driverLicenseKey;
-            }, cancellationToken);
+            var documentKey = await _secretCache.StoreAsync(document, TimeSpan.FromMinutes(30));
+            await HandleInputStateChange(update, documentKey, cancellationToken);
 
             await _botClient.SendMessage(update.Chat, $"Field {firstInvalidation.Name} has been filled");
-            invalidations = GetInvalidations(vehicleDocument);
+            invalidations = GetInvalidations(document);
 
             if (invalidations.Count == 0)
             {
-                await OnNoInvalidations(update, vehicleDocument, cancellationToken);
+                await OnNoInvalidations(update, document, cancellationToken);
                 return;
             }
 
@@ -88,5 +86,6 @@ namespace CarInsuranceBot.Core.Actions.InsuranceWorkflow
         protected abstract Task OnNoDocuments(Message update, CancellationToken cancellationToken);
         protected abstract Task OnNoInvalidations(Message update, TDocument document, CancellationToken cancellationToken);
         protected abstract Task<TDocument?> RetreiveDocument(Message update, CancellationToken cancellationToken);
+        protected abstract Task HandleInputStateChange(Message update, string cacheKey, CancellationToken cancellationToken);
     }
 }

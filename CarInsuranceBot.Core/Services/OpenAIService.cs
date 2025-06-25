@@ -51,7 +51,13 @@ namespace CarInsuranceBot.Core.Services
 
         private readonly string DETECT_VALUE_SYSTEM_MESSAGE = """
             You assistant with the goal to get specific field value from the user input. You need to analyze user input and use your tool to provide system with the value from the user input.
-            You are supplied with the field name, based on it determine value format. If user input does not contains value, do not use the tool
+            You are supplied with the field name, based on it determine value format. If user input does not contains value, do not use the tool. 
+            You don't need to decide yourself if the value content and its meaning is suitable for the field context or not - some fields can literally contain unusual data. 
+            Only thing you need to validate is format(so you don't pass some words and letters into date field) and you need to extract value from the user input, if it is contains something else.
+            Examples:
+            For the field "Country code" user submitted input "ODR". Maybe you don't know this code, but you need to accept this value, it is not breaking format, unlike example input "Please, help" or "12151332"
+            For the field "Surname" user submitted input "Surname". It is OK to accept it, it is not breaking format.
+            For some field user submitted something like "Empty", "000000000000000000" and some other similar things. ACCEPT IT, you don't need to validate is there an error on not, unless it is breaking data type format
             """;
 
         //private readonly string TRUE_FALSE_SYSTEM_MESSAGE = """

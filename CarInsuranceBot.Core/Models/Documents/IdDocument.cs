@@ -30,6 +30,7 @@
             if (string.IsNullOrEmpty(DocumentNumber)) invalidations.Add(new("Document number", SetDocumentNumberFromString));
             if (string.IsNullOrEmpty(CountryCode)) invalidations.Add(new("Country code", SetCountryCodeFromString));
             if (string.IsNullOrEmpty(Surname)) invalidations.Add(new("Surname", SetSurnameFromString));
+            if (string.IsNullOrEmpty(Name)) invalidations.Add(new("Name", SetNameFromString));
             if (BirthDate == DateTime.MinValue) invalidations.Add(new("Birth date", SetBirthDateFromString));
             if (ExpiryDate == DateTime.MinValue) invalidations.Add(new("Expiry date", SetExpiryDateFromString));
 
