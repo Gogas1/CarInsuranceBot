@@ -38,6 +38,19 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
             return document.GetInvalidFieldsHandlers();
         }
 
+        protected override async Task HandleInputStateChange(Message update, string cacheKey, CancellationToken cancellationToken)
+        {
+            if(update.From == null)
+            {
+                return;
+            }
+
+            await _userService.SetUserInputStateAsync(update.From.Id, uis =>
+            {
+                uis.CreateInsuranceFlow.IdCacheKey = cacheKey;
+            }, cancellationToken);
+        }
+
         protected override async Task OnNoDocuments(Message update, CancellationToken cancellationToken)
         {
             if (update.From == null)

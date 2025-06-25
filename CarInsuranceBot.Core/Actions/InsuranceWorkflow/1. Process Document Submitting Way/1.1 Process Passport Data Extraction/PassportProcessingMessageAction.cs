@@ -157,7 +157,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
                 await _openAiService.GetDiversifiedAnswer(AnswersData.NO_DOCUMENT_DATA_SETTINGS, cancellationToken),
                 replyMarkup: AnswersData.CORRECTNESS_PROCESSING_KEYBOARD,
                 cancellationToken: cancellationToken);
-            await _botClient.SendMessage(update.Chat, $"You need to fill up the \"{firstInvalidation.Name}\" field first");
+            await _botClient.SendMessage(update.Chat, $"For the manual information entering you need to fill up the \"{firstInvalidation.Name}\" field first");
             await _userService.SetUserStateByTelegramIdAsync(Enums.UserState.PassportDataCorrectionAwait, update.From.Id, cancellationToken);
         }
     }

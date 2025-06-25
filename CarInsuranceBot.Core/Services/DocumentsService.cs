@@ -60,21 +60,16 @@ namespace CarInsuranceBot.Core.Services
         /// <param name="userId"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        internal async Task<UserDocuments?> GetDataForUserAsync(long userId, CancellationToken cancellationToken)
+        internal async Task<UserDocuments> GetDataForUserAsync(long userId, CancellationToken cancellationToken)
         {
             var userInputState = await _userService.GetUserInputStateAsync(userId, cancellationToken);
             if (string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.IdCacheKey) || string.IsNullOrEmpty(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey))
             {
-                return null;
+                return new UserDocuments(null, null);
             }
 
             var idData = await _secretCache.RetrieveAsync<IdDocument>(userInputState.CreateInsuranceFlow.IdCacheKey);
             var licenseData = await _secretCache.RetrieveAsync<DriverLicenseDocument>(userInputState.CreateInsuranceFlow.DriverLicenseCacheKey);
-
-            if (idData == null || licenseData == null)
-            {
-                return null;
-            }
 
             return new UserDocuments(idData, licenseData);
         }
@@ -112,14 +107,14 @@ namespace CarInsuranceBot.Core.Services
 
         internal class UserDocuments
         {
-            public UserDocuments(IdDocument idDocument, DriverLicenseDocument driverLicenseDocument)
+            public UserDocuments(IdDocument? idDocument, DriverLicenseDocument? driverLicenseDocument)
             {
                 this.idDocument = idDocument;
                 DriverLicenseDocument = driverLicenseDocument;
             }
 
-            public IdDocument idDocument { get; }
-            public DriverLicenseDocument DriverLicenseDocument { get; }
+            public IdDocument? idDocument { get; }
+            public DriverLicenseDocument? DriverLicenseDocument { get; }
         }
     }
 }

@@ -187,7 +187,9 @@ namespace CarInsuranceBot.Core.Extensions
 
             services.AddTransient<PassportProcessingCallbackQueryAction>();
             services.AddTransient<ProcessPassportDataConfirmationCallbackAction>();
+            services.AddTransient<ProcessPassportDataCorrectionCallbackQueryAction>();
             services.AddTransient<ProcessVehicleIdDataConfirmationCallbackAction>();
+            services.AddTransient<ProcessVehicleIdDataCorrectionCallbackQueryAction>();
             services.AddTransient<ProcessDocumentsSubmittingCallbackQueryAction>();
             services.AddTransient<ProcessDataConfirmationCallbackAction>();
             services.AddTransient<ProcessPriceConfirmationCallbackAction>();

@@ -42,7 +42,7 @@ namespace CarInsuranceBot.Core.Actions.MessageActions
 
             var data = await _documentsService.GetDataForUserAsync(update.From.Id, cancellationToken);
 
-            if (data == null)
+            if (data.DriverLicenseDocument == null || data.idDocument == null)
             {
                 // Create and set new nonce
                 var newNonce = _documentsService.SetNonceForUser(update.From.Id);
