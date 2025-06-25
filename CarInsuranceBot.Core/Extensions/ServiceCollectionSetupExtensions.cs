@@ -156,7 +156,7 @@ namespace CarInsuranceBot.Core.Extensions
             services.AddScoped<InsuranceService>();
             services.AddScoped<PdfService>();
             services.AddScoped<OpenAIService>();
-            services.AddScoped<TestService>();
+            //services.AddScoped<TestService>();
 
             return services;
         }
