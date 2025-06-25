@@ -15,6 +15,9 @@ using Telegram.Bot.Types.Passport;
 
 namespace CarInsuranceBot.Core.Actions.Abstractions
 {
+    /// <summary>
+    /// Base for actions, processing a document from a chat photo
+    /// </summary>
     internal abstract class ChatDocumentProcessingAction : GeneralInformationalMessageAction
     {
         private readonly MindeeClient _mindeeClient;
@@ -28,6 +31,19 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
             _mindeeClient = mindeeClient;
         }
 
+        /// <summary>
+        /// Processes the document using Mindee API and forms the document model
+        /// </summary>
+        /// <typeparam name="TDocument"></typeparam>
+        /// <typeparam name="TMindeeDocument"></typeparam>
+        /// <param name="photoStream">Image stream</param>
+        /// <param name="userId">Telegram user Id</param>
+        /// <param name="fileName">File name for the Mindee API</param>
+        /// <param name="mappingFunction">Mapping function from the Mindee document to the application document model</param>
+        /// <param name="onErrorStatus">API error handler</param>
+        /// <param name="onInvalidation"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected async Task<TDocument?> ProcessDocumentAsync<TDocument, TMindeeDocument>(
             Stream photoStream,
             long userId,
@@ -58,15 +74,29 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
             catch (HttpRequestException ex)
             {
                 // Handle error
-                if(ex.StatusCode != null)
+                if (ex.StatusCode != null)
                 {
                     onErrorStatus((int)ex.StatusCode);
                 }
 
                 return null;
             }
+            catch (Mindee400Exception)
+            {
+               onErrorStatus(400);
+
+                return null;
+            }
         }
 
+        /// <summary>
+        /// Handle no submitted photo
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="guidance"></param>
+        /// <param name="noPhotoMessage"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected async Task ProcessNoPhoto(Message update, string guidance, string noPhotoMessage, CancellationToken cancellationToken)
         {
             if (!string.IsNullOrEmpty(update.Text))
@@ -88,6 +118,13 @@ namespace CarInsuranceBot.Core.Actions.Abstractions
             await OnNoPhoto(update, noPhotoMessage, cancellationToken);
         }
 
+        /// <summary>
+        /// Handle answer on no photo
+        /// </summary>
+        /// <param name="update"></param>
+        /// <param name="message"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         protected async Task OnNoPhoto(Message update, string message, CancellationToken cancellationToken)
         {
             await _botClient.SendMessage(update.Chat, message, replyMarkup: AnswersData.STOP_WORKFLOW_KEYBOARD, cancellationToken: cancellationToken);
